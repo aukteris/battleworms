@@ -8,21 +8,19 @@
 
 //initial variables
 var width = 50;
-var height = 50;
+var height = 80;
 var ticks = 0;
 var gridSize = 10;
 var gameUpdateRate = 2; //after 5 ticks
-var grid = []; //all tiles
-var updates = []; //indexes of grid to be updated
-var snakes = []
-var worldColliders = []
-
+var objs = []; //all tiles that should be displayed
+var snakes = [];
+var clientSnakeIndex = 0;
 document.getElementById("theCanvas").width = width * gridSize;
 document.getElementById("theCanvas").height = height * gridSize;
 ctx = document.getElementById("theCanvas").getContext('2d');
 
 
-class Vector{
+class V{
 	constructor(x, y){
 		this.x = x;
 		this.y = y;
@@ -32,10 +30,11 @@ class Vector{
 		}
 	}
 }
-function AddVectors(v1, v2)
+function AddVs(v1, v2)
 {
-	return new Vector(v1.x + v2.x, v1.y + v2.y);
+	return new V(v1.x + v2.x, v1.y + v2.y);
 }
+
 class Color{
 	constructor(r, g, b)
 	{
@@ -49,59 +48,43 @@ class Color{
 	}
 }
 
-//helper methods
-function IndexToVector(index)
-{
-	var x = Math.floor(index/width);
-	return new Vector(x, index-x*width);
-}
-function VectorToIndex(v)
-{
-	return v.x*width+v.y;
-}
-//additional constructors
+
 class Tile
 {
-	constructor(index)
+	constructor(pos, type)
 	{
-		this.index = index;
-		this.position = IndexToVector(index);
-		this.updates = 0;
+		this.pos = pos;
 		this.color = new Color(0, 255, 0);
-
-		this.SetUpdate = function(updateAmount)
-		{
-			this.updates = updateAmount;
-			if(!updates.includes(this.index))
-				updates.push(this.index);
-		}
+		this.type = type == null ? 0 : type; //0=collide
+		objs.push(this);
 	}
 }
 class Snake
 {
 	constructor()
 	{
-		this.direction = new Vector(0, -1);//going down
-		this.parts = [new Vector(10, 10), new Vector(10, 11), new Vector(10, 12), new Vector(10, 13)]
+		this.direction = new V(0, -1);//going down
+		this.parts = [];
+		this.parts.push(new Tile(new V(5, 5)));
 	}
 }
 
 
-//create the grid
-for(var i = 0; i < width*height; i++)
-{
-	grid.push(new Tile(i));
-}
+
+//add borders
 for(var x = 0; x < width; x++)
 {
-	worldColliders.push(x);
-	var x1 = VectorToIndex(new Vector(x, height-1));
-	worldColliders.push(x1);
-	grid[x].color = new Color(0, 255, 255);
-	grid[x1].color = new Color(0, 255, 255);
-	grid[x].SetUpdate(Infinity);
-	grid[x1].SetUpdate(Infinity);
-
+	var t = new Tile(new V(x, 0), 1);
+	t.color = new Color(0, 255, 255);
+	var t2 = new Tile(new V(x, height-1), 1);
+	t2.color = new Color(0, 255, 255);
+}
+for(var y = 0; y < height; y++)
+{
+	var t = new Tile(new V(0, y), 1);
+	t.color = new Color(0, 255, 255);
+	var t2 = new Tile(new V(width-1, y), 1);
+	t2.color = new Color(0, 255, 255);
 }
 //add a snake
 snakes.push(new Snake())
@@ -115,23 +98,12 @@ function Update()
 		ticks = 0;
 		GameUpdate();
 	}
-	//update the grid (visual)
-	var remove = []//indexes (of updates) to be removed
-	updates.forEach(function(i, index)
+	//update the game (visual)
+	ctx.clearRect(0, 0, width*gridSize, height*gridSize);
+	objs.forEach(function(tile)
 	{
-		var tile = grid[i]
-		tile.updates -= 1;
-		if(tile.updates <= 0)
-		{
-			remove.push(i);
-			tile.color = new Color();
-		}
-		//draw
 		ctx.fillStyle = tile.color.ToString();
-		ctx.fillRect(tile.position.x*gridSize, height * gridSize - tile.position.y * gridSize, gridSize, gridSize);
-	});
-	remove.forEach(function(indx){
-		updates.splice(indx);
+		ctx.fillRect(tile.pos.x*gridSize, (height * gridSize) - ((tile.pos.y+1) * gridSize), gridSize, gridSize);
 	});
 }
 
@@ -140,21 +112,18 @@ function Update()
 function GameUpdate()
 {
 	snakes.forEach(function(snake){
-		var lastPos = snake.parts[0];
+		var lastPos = snake.parts[0].pos;
 		//console.log(lastPos);
-		snake.parts[0] = AddVectors(snake.parts[0], snake.direction);
+		snake.parts[0].pos = AddVs(snake.parts[0].pos, snake.direction);
 		//check for collision with world
 		snake.parts.forEach(function(part, index){
 			if(index != 0)
 			{
-				var newlastpos = new Vector(part.x, part.y);
-				part.x = lastPos.x;
-				part.y = lastPos.y;
+				var newlastpos = new V(part.pos.x, part.pos.y);
+				part.pos.x = lastPos.x;
+				part.pos.y = lastPos.y;
 				lastPos = newlastpos;
 			}
-			var indx = VectorToIndex(part);
-			grid[indx].color = new Color(255, 0, 255);
-			grid[indx].SetUpdate(3);
 		});
 	});
 }
@@ -163,3 +132,4 @@ function GameUpdate()
 
 
 setInterval(Update, 500);
+
