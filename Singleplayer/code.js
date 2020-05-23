@@ -11,45 +11,16 @@ var width = 50;
 var height = 80;
 var ticks = 0;
 var gridSize = 10;
-var gameUpdateRate = 2; //after 5 ticks
+var gameUpdateRate = 1; //after 5 ticks
 var objs = []; //all tiles that should be displayed
 var snakes = [];
-var clientSnakeIndex = 0;
+var clientSnakeIndex = 0; //testing
 document.getElementById("theCanvas").width = width * gridSize;
 document.getElementById("theCanvas").height = height * gridSize;
 ctx = document.getElementById("theCanvas").getContext('2d');
 
 
-class V{
-	constructor(x, y){
-		this.x = x;
-		this.y = y;
-		this.area = function()
-		{
-			return this.x * this.y;
-		}
-	}
-}
-function AddVs(v1, v2)
-{
-	return new V(v1.x + v2.x, v1.y + v2.y);
-}
-function CompareVs(v1, v2)
-{
-	return v1.x == v2.x && v1.y == v2.y;
-}
-class Color{
-	constructor(r, g, b)
-	{
-		this.r = r == null ? 0 : r;
-		this.g = g == null ? 0 : g;
-		this.b = b == null ? 0 : b;
-		this.ToString = function()
-		{
-			return "rgb("+this.r+","+this.g+","+this.b+")";
-		}
-	}
-}
+
 
 
 class Tile
@@ -68,10 +39,11 @@ class Snake
 	{
 		this.direction = new V(0, -1);//going down
 		this.parts = [];
-		this.pendingDeath = false;
+		this.pendingDeath = false; //waiting to be removed
 		this.lastPos = new V(5, 5);//last position of the head
 		this.parts.push(new Tile(new V(5, 5)), new Tile(new V(5, 6)), new Tile(new V(5, 7)));
 		this.collided = false;
+		this.lastDirection = new V(0, -1);
 	}
 }
 
@@ -92,7 +64,8 @@ for(var y = 0; y < height; y++)
 	var t2 = new Tile(new V(width-1, y), 0);
 	t2.color = new Color(0, 255, 255);
 }
-//add a snake
+
+//add a snake (for testing)
 snakes.push(new Snake())
 
 //update function
@@ -140,6 +113,7 @@ function UpdatePositions()
 function GameUpdate()
 {
 	snakes.forEach(function(snake){
+		snake.lastDirection = snake.direction;
 		var lastPos = snake.lastPos;
 		snake.parts.forEach(function(part, index){
 			if(index != 0 && !snake.pendingDeath)
@@ -158,8 +132,24 @@ function GameUpdate()
 			snake.pendingDeath = true;
 	});
 }
-
-
+//get directional input
+document.addEventListener("keydown", function(event) {
+  //console.log(event.code);
+  var kC = "none";
+  if (event.keyCode == 87 || event.keyCode == 38) kC = "up";
+  if (event.keyCode == 83 || event.keyCode == 40) kC = "down";
+  if (event.keyCode == 68 || event.keyCode == 39) kC = "right";
+  if (event.keyCode == 65 || event.keyCode == 37) kC = "left";
+  var x = 0;
+  var y = 0;
+  if (kC === "up") y = 1;
+  if (kC === "down") y = -1;
+  if (kC === "left") x = -1;
+  if (kC === "right") x = 1;
+  var dir = new V(x, y);
+  if(!CompareVs(AddVs(dir, snakes[clientSnakeIndex].lastDirection), new V(0, 0))) //so we can't go in on ourselves
+  	snakes[clientSnakeIndex].direction = dir
+});
 
 
 setInterval(Update, 150);
