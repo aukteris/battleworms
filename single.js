@@ -9,6 +9,10 @@ app.get('/code.js', function(req, res) {
         res.sendFile(__dirname + '/Singleplayer/code.js');
 });
 
+app.get('/engine.js', function(req, res) {
+	res.sendFile(__dirname + '/Singleplayer/engine.js');
+});
+
 http.listen(3000, function() {
 	console.log('listening on *:3000');
 });
