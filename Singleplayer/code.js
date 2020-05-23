@@ -1,3 +1,27 @@
+
+
+/* Important formulas
+	TO get an inverse Y value - use realY = height - y
+	Index of 2D array = x*width+y
+	inverse = floor(index/width), index-floor(index/width)*width
+*/
+
+//initial variables
+var width = 50;
+var height = 50;
+var ticks = 0;
+var gridSize = 10;
+var gameUpdateRate = 2; //after 5 ticks
+var grid = []; //all tiles
+var updates = []; //indexes of grid to be updated
+var snakes = []
+var worldColliders = []
+
+document.getElementById("theCanvas").width = width * gridSize;
+document.getElementById("theCanvas").height = height * gridSize;
+ctx = document.getElementById("theCanvas").getContext('2d');
+
+
 class Vector{
 	constructor(x, y){
 		this.x = x;
@@ -25,22 +49,6 @@ class Color{
 	}
 }
 
-/* Important formulas
-	TO get an inverse Y value - use realY = height - y
-	Index of 2D array = x*width+y
-	inverse = floor(index/width), index-floor(index/width)*width
-*/
-
-//initial variables
-var width = 30;
-var height = 50;
-var ticks = 0;
-var gridSize = 10;
-var gameUpdateRate = 2; //after 5 ticks
-var grid = []; //all tiles
-var updates = []; //indexes of grid to be updated
-var snakes = []
-ctx = document.getElementById("theCanvas").getContext('2d');
 //helper methods
 function IndexToVector(index)
 {
@@ -84,6 +92,17 @@ for(var i = 0; i < width*height; i++)
 {
 	grid.push(new Tile(i));
 }
+for(var x = 0; x < width; x++)
+{
+	worldColliders.push(x);
+	var x1 = VectorToIndex(new Vector(x, height-1));
+	worldColliders.push(x1);
+	grid[x].color = new Color(0, 255, 255);
+	grid[x1].color = new Color(0, 255, 255);
+	grid[x].SetUpdate(Infinity);
+	grid[x1].SetUpdate(Infinity);
+
+}
 //add a snake
 snakes.push(new Snake())
 
@@ -103,10 +122,13 @@ function Update()
 		var tile = grid[i]
 		tile.updates -= 1;
 		if(tile.updates <= 0)
-			remove.push(i)
+		{
+			remove.push(i);
+			tile.color = new Color();
+		}
 		//draw
 		ctx.fillStyle = tile.color.ToString();
-		ctx.fillRect(tile.position.x*gridSize, tile.position.y * gridSize, gridSize, gridSize);
+		ctx.fillRect(tile.position.x*gridSize, height * gridSize - tile.position.y * gridSize, gridSize, gridSize);
 	});
 	remove.forEach(function(indx){
 		updates.splice(indx);
@@ -121,6 +143,7 @@ function GameUpdate()
 		var lastPos = snake.parts[0];
 		//console.log(lastPos);
 		snake.parts[0] = AddVectors(snake.parts[0], snake.direction);
+		//check for collision with world
 		snake.parts.forEach(function(part, index){
 			if(index != 0)
 			{
@@ -131,12 +154,12 @@ function GameUpdate()
 			}
 			var indx = VectorToIndex(part);
 			grid[indx].color = new Color(255, 0, 255);
-			grid[indx].SetUpdate(1);
+			grid[indx].SetUpdate(3);
 		});
 	});
 }
 
-ctx.fillStyle = new Color(255, 255, 0).ToString();
-ctx.fillRect(10*gridSize, 9*gridSize, gridSize, gridSize);
+
+
 
 setInterval(Update, 500);
