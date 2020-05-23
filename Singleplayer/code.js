@@ -29,7 +29,7 @@ class Tile
 	{
 		this.pos = pos;
 		this.color = new Color(0, 255, 0);
-		this.type = type == null ? 0 : type; //0=collide
+		this.type = type == null ? 0 : type; //0=collide, 1=snack
 		objs.push(this);
 	}
 }
@@ -67,7 +67,7 @@ for(var y = 0; y < height; y++)
 
 //add a snake (for testing)
 snakes.push(new Snake())
-
+OnSnackEaten();//create new snack
 //update function
 function Update()
 {
@@ -87,16 +87,29 @@ function Update()
 		ctx.fillRect(tile.pos.x*gridSize, (height * gridSize) - ((tile.pos.y+1) * gridSize), gridSize, gridSize);
 	});
 }
-
+function OnSnackEaten()
+{
+	var snack = new Tile(new V(Rand(0, width-1), Rand(0, height-1)));
+	snack.color = new Color(255, 100, 50)
+	snack.type = 1;
+}
 function CollisionTesting()
 {
 	objs.forEach(function(tile){
-		if(tile.type == 0)
+		if(tile.type == 0 || tile.type == 1)
 		{
 			snakes.forEach(function(snake)
 			{
 				if(CompareVs(snake.parts[0].pos, tile.pos) && tile != snake.parts[0])
-					snake.collided = true;
+				{
+					if(tile.type == 0)
+						snake.collided = true;
+					if(tile.type == 1)
+					{
+						OnSnackEaten();
+						snake.parts.push(new Tile(new V(0, 0)))
+					}
+				}
 			});
 		}
 	});
