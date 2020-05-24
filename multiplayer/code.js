@@ -29,6 +29,7 @@ class Tile
 {
 	constructor(pos, type)
 	{
+		this.id;
 		this.alpha = 1;
 		this.pos = pos;
 		this.color = new Color(0, 255, 0);
@@ -55,7 +56,6 @@ function colorToString(color) {
 	return "rgb("+color.r+","+color.g+","+color.b+")";
 }
 
-/*
 //add borders
 for(var x = 0; x < width; x++)
 {
@@ -71,17 +71,16 @@ for(var y = 0; y < height; y++)
 	var t2 = new Tile(new V(width-1, y), 0);
 	t2.color = new Color(0, 255, 255);
 }
-*/
-//add a snake (for testing)
 
-socket.on("init", function(msg)
+//add a snake (for testing)
+socket.on("init", function(playerSnake)
 {
-	objs = msg[1];
-	snakes = msg[0];
-	console.log(msg);
-	console.log(snakes[snakes.length - 1][2])
-	console.log(objs[objs.length])
+	playerSnake.parts.forEach(function(tile, index){
+		objs.push(tile);
+	});
+	snakes.push(playerSnake);
 });
+
 //update function
 function Update()
 {

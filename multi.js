@@ -59,6 +59,7 @@ class Tile
 {
 	constructor(pos, type)
 	{
+		this.id = globalObjs.length;
 		this.alpha = 1;
 		this.pos = pos;
 		this.color = new Color(0, 255, 0);
@@ -71,6 +72,7 @@ class Snake
 {
 	constructor(id)
 	{
+		this.id = id;
 		this.direction = new V(0, -1);//going down
 		this.parts = [];
 		this.pendingDeath = false; //waiting to be removed
@@ -78,7 +80,6 @@ class Snake
 		this.parts.push(new Tile(new V(5, 5)), new Tile(new V(5, 6)), new Tile(new V(5, 7)));
 		this.collided = false;
 		this.lastDirection = new V(0, -1);
-		this.id = id;
 	}
 }
 
@@ -87,9 +88,9 @@ var snakes = [];
 app.use(express.static('multiplayer'));
 
 io.on('connection', function(socket){
-	var message = [snakes, globalObjs];
-	snakes.push(new Snake(socket.id));
-	socket.emit('init', message);
+	var snake = new Snake(socket.id);
+	snakes.push(snake);
+	socket.emit('init', snake);
 });
 
 http.listen(3000, function() {
