@@ -51,8 +51,11 @@ class Snake
 	}
 }
 
+function colorToString(color) {
+	return "rgb("+color.r+","+color.g+","+color.b+")";
+}
 
-
+/*
 //add borders
 for(var x = 0; x < width; x++)
 {
@@ -68,12 +71,16 @@ for(var y = 0; y < height; y++)
 	var t2 = new Tile(new V(width-1, y), 0);
 	t2.color = new Color(0, 255, 255);
 }
-
+*/
 //add a snake (for testing)
 
 socket.on("init", function(msg)
 {
+	objs = msg[1];
+	snakes = msg[0];
 	console.log(msg);
+	console.log(snakes[snakes.length - 1][2])
+	console.log(objs[objs.length])
 });
 //update function
 function Update()
@@ -91,9 +98,19 @@ function Update()
 	objs.forEach(function(tile, index)
 	{
 		ctx.globalAlpha = tile.alpha;
-		ctx.fillStyle = tile.color.ToString();
+		ctx.fillStyle = colorToString(tile.color);
 		ctx.fillRect(tile.pos.x*gridSize, (height * gridSize) - ((tile.pos.y+1) * gridSize), gridSize, gridSize);
 	});
+	snakes.forEach(function(snake)
+	{
+		snake.parts.forEach(function(tile, index)
+		{
+			ctx.globalAlpha = tile.alpha;
+			ctx.fillStyle = colorToString(tile.color);
+			ctx.fillRect(tile.pos.x*gridSize, (height * gridSize) - ((tile.pos.y+1) * gridSize), gridSize, gridSize);
+		});
+	});
+
 }
 function OnSnackEaten()
 {

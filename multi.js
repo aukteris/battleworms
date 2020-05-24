@@ -18,16 +18,12 @@ app.get('/engine.js', function(req, res) {
 });
 */
 
-var objs = [];
+var globalObjs = [];
 
 class V{
 	constructor(x, y){
 		this.x = x;
 		this.y = y;
-		this.area = function()
-		{
-			return this.x * this.y;
-		}
 	}
 }
 function AddVs(v1, v2)
@@ -48,10 +44,6 @@ class Color{
 		this.r = r == null ? 0 : r;
 		this.g = g == null ? 0 : g;
 		this.b = b == null ? 0 : b;
-		this.ToString = function()
-		{
-			return "rgb("+this.r+","+this.g+","+this.b+")";
-		}
 	}
 }
 function Rand(min, max) {
@@ -72,12 +64,12 @@ class Tile
 		this.color = new Color(0, 255, 0);
 		this.type = type == null ? 0 : type; //0=collide, 1=snack, 2 = effect
 		this.effectData = null;
-		objs.push(this);
+		globalObjs.push(this);
 	}
 }
 class Snake
 {
-	constructor()
+	constructor(id)
 	{
 		this.direction = new V(0, -1);//going down
 		this.parts = [];
@@ -86,6 +78,7 @@ class Snake
 		this.parts.push(new Tile(new V(5, 5)), new Tile(new V(5, 6)), new Tile(new V(5, 7)));
 		this.collided = false;
 		this.lastDirection = new V(0, -1);
+		this.id = id;
 	}
 }
 
@@ -94,8 +87,9 @@ var snakes = [];
 app.use(express.static('multiplayer'));
 
 io.on('connection', function(socket){
-	snakes.push(new Snake());
-	socket.emit('init', snakes);
+	var message = [snakes, globalObjs];
+	snakes.push(new Snake(socket.id));
+	socket.emit('init', message);
 });
 
 http.listen(3000, function() {
