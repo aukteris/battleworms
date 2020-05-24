@@ -7,6 +7,7 @@
 */
 
 //initial variables
+var socket = io()
 var width = 25;
 var height = 25;
 var ticks = 0;
@@ -14,6 +15,7 @@ var gridSize = 10;
 var tickRate = 10; //after 5 ticks
 var objs = []; //all tiles that should be displayed
 var snakes = [];
+
 var clientSnakeIndex = 0; //testing
 document.getElementById("theCanvas").width = width * gridSize;
 document.getElementById("theCanvas").height = height * gridSize;
@@ -68,8 +70,11 @@ for(var y = 0; y < height; y++)
 }
 
 //add a snake (for testing)
-snakes.push(new Snake())
-OnSnackEaten();//create new snack
+
+socket.on("init", function(msg)
+{
+	console.log(msg);
+});
 //update function
 function Update()
 {

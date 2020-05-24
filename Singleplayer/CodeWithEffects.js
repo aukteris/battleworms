@@ -7,7 +7,7 @@
 */
 
 //initial variables
-var width = 90;
+var width = 25;
 var height = 25;
 var ticks = 0;
 var gridSize = 10;
@@ -33,6 +33,16 @@ class Tile
 		this.type = type == null ? 0 : type; //0=collide, 1=snack, 2 = effect
 		this.effectData = null;
 		objs.push(this);
+	}
+}
+class EffectData
+{
+	constructor(power, colors)
+	{
+		this.power = power;
+		this.updated = false;
+		this.decay = 9;
+		this.colors = colors == null ? [new Color(252, 186, 3), new Color(255, 250, 97)] : colors;
 	}
 }
 class Snake
@@ -85,10 +95,43 @@ function Update()
 	ctx.clearRect(0, 0, width*gridSize, height*gridSize);
 	objs.forEach(function(tile, index)
 	{
+		if(tile.type == 2)
+		{
+			if(tile.effectData.power <= 0)
+				objs.splice(index, 1);
+			else
+				UpdateEffectTile(tile);
+		}
 		ctx.globalAlpha = tile.alpha;
 		ctx.fillStyle = tile.color.ToString();
 		ctx.fillRect(tile.pos.x*gridSize, (height * gridSize) - ((tile.pos.y+1) * gridSize), gridSize, gridSize);
 	});
+}
+function UpdateEffectTile(tile)
+{
+	if(tile.effectData.updated)
+	{
+		tile.effectData.power -= 3;
+		return;
+	}
+	tile.effectData.updated = true;
+	adjacentTiles = [new V(-1, 0), new V(1, 0), new V(0, -1), new V(0, 1)];
+	tile.color = RandomChoice(tile.effectData.colors);
+	adjacentTiles.forEach(function(dir){
+		//create a new tile here with power = power - 1
+		var newtile = new Tile(AddVs(dir, tile.pos), 2);
+		newtile.color = RandomChoice(tile.effectData.colors);
+		newtile.effectData = new EffectData(tile.effectData.power - Rand(0, tile.effectData.decay));
+		newtile.effectData.colors = tile.effectData.colors;
+		newtile.effectData.decay = tile.effectData.decay;
+		newtile.alpha = 1/tile.effectData.power;
+	});
+}
+function CreateEffect(pos, colors, power, decay)
+{
+	var init = new Tile(pos, 2);
+	init.effectData = new EffectData(power == null ? 5 : power,colors);
+	init.effectData.decay = decay == null ? 9 : decay;
 }
 function OnSnackEaten()
 {
@@ -108,6 +151,8 @@ function CollisionTesting()
 					if(tile.type == 0)
 					{
 						snake.collided = true;
+						//create a death effect for the snake
+						CreateEffect(tile.pos, [new Color(255, 15, 0), new Color(230, 25, 66)], 8, 1)
 					}
 					if(tile.type == 1)
 					{
@@ -115,6 +160,7 @@ function CollisionTesting()
 						objs.splice(index, 1);
 						OnSnackEaten();
 						snake.parts.push(new Tile(new V(0, 0)))
+						CreateEffect(tile.pos);
 					}
 				}
 			});
