@@ -7,8 +7,8 @@
 */
 
 //initial variables
-var width = 50;
-var height = 80;
+var width = 25;
+var height = 25;
 var ticks = 0;
 var gridSize = 10;
 var gameUpdateRate = 1; //after 5 ticks
@@ -29,10 +29,11 @@ class Tile
 	{
 		this.pos = pos;
 		this.color = new Color(0, 255, 0);
-		this.type = type == null ? 0 : type; //0=collide, 1=snack
+		this.type = type == null ? 0 : type; //0=collide, 1=snack, 2 = effect
 		objs.push(this);
 	}
 }
+
 class Snake
 {
 	constructor()
@@ -89,13 +90,13 @@ function Update()
 }
 function OnSnackEaten()
 {
-	var snack = new Tile(new V(Rand(0, width-1), Rand(0, height-1)));
+	var snack = new Tile(new V(Rand(1, width-2), Rand(1, height-2)));
 	snack.color = new Color(255, 100, 50)
 	snack.type = 1;
 }
 function CollisionTesting()
 {
-	objs.forEach(function(tile){
+	objs.forEach(function(tile, index){
 		if(tile.type == 0 || tile.type == 1)
 		{
 			snakes.forEach(function(snake)
@@ -106,6 +107,8 @@ function CollisionTesting()
 						snake.collided = true;
 					if(tile.type == 1)
 					{
+						//Destroy this snack
+						objs.splice(index, 1);
 						OnSnackEaten();
 						snake.parts.push(new Tile(new V(0, 0)))
 					}
