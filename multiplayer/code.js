@@ -15,6 +15,8 @@ var gridSize = 10;
 var tickRate = 10; //after 5 ticks
 var objs = []; //all tiles that should be displayed
 var snakes = [];
+var clients = [];
+var connectionId;
 
 var clientSnakeIndex = 0; //testing
 document.getElementById("theCanvas").width = width * gridSize;
@@ -75,10 +77,41 @@ for(var y = 0; y < height; y++)
 //add a snake (for testing)
 socket.on("init", function(playerSnake)
 {
-	playerSnake.parts.forEach(function(tile, index){
+	connectionId = playerSnake.id;
+	playerSnake.parts.forEach(function(tile){
 		objs.push(tile);
 	});
-	snakes.push(playerSnake);
+	clients.push(connectionId);
+	snakes[clients.indexOf(connectionId)] = playerSnake;
+});
+
+//receive updates from the server, and draw all non-local snakes
+socket.on('update', function(allSnakes){
+	allSnakes.forEach(function(snake){
+		if (snake.id != connectionId) {
+			// add new snakes to the tracked clients
+			if(typeof clients.indexOf(snake.id) == "undefined") {
+				snake.parts.forEach(function(tile){
+					objs.push(tile);
+				});
+				clients.push(snake.id);
+				snakes[clients.indexOf(snake.id)] = snake;
+
+			// update existing snakes
+			} else {
+				var playerLocalSnake = snakes[clients.indexOf(snake.id)];
+				snake.parts.forEach(function(tile, index) {
+					if (typeof playerLocalSnake.parts[index] == "undefined") {
+						objs.push(tile);
+						playerLocalSnake.parts[index] = tile
+					} else {
+						playerLocalSnake.parts[index].pos.x = tile.pos.x;
+						playerLocalSnake.parts[index].pos.y = tile.pos.y;
+					}
+				});
+			}
+		}
+	});
 });
 
 //update function
@@ -144,34 +177,34 @@ function CollisionTesting()
 }
 function UpdatePositions()
 {
-	snakes.forEach(function(snake){
-		snake.lastPos = snake.parts[0].pos;
-		if(!snake.collided)
-			snake.parts[0].pos = AddVs(snake.parts[0].pos, snake.direction);
-	});
+	var tmpSnake = snakes[clients.indexOf(connectionId)];
+	tmpSnake.lastPos = tmpSnake.parts[0].pos;
+	if(!tmpSnake.collided)
+		tmpSnake.parts[0].pos = AddVs(tmpSnake.parts[0].pos, tmpSnake.direction);
 }
 //All game logic happens here
 function GameUpdate()
 {
-	snakes.forEach(function(snake){
-		snake.lastDirection = snake.direction;
-		var lastPos = snake.lastPos;
-		snake.parts.forEach(function(part, index){
-			if(index != 0 && !snake.pendingDeath)
-			{
-				var newlastpos = new V(part.pos.x, part.pos.y);
-				part.pos.x = lastPos.x;
-				part.pos.y = lastPos.y;
-				lastPos = newlastpos;
-			}
-			if(snake.collided)
-			{
-				part.color = new Color(255, 255, 255);
-			}
-		});
-		if(snake.collided)
-			snake.pendingDeath = true;
+	var tmpSnake = snakes[clients.indexOf(connectionId)];
+	tmpSnake.lastDirection = tmpSnake.direction;
+	var lastPos = tmpSnake.lastPos;
+	tmpSnake.parts.forEach(function(part, index){
+		if(index != 0 && !tmpSnake.pendingDeath)
+		{
+			var newlastpos = new V(part.pos.x, part.pos.y);
+			part.pos.x = lastPos.x;
+			part.pos.y = lastPos.y;
+			lastPos = newlastpos;
+		}
+		if(tmpSnake.collided)
+		{
+			part.color = new Color(255, 255, 255);
+		}
 	});
+	if(tmpSnake.collided)
+		tmpSnake.pendingDeath = true;
+
+	socket.emit('update', tmpSnake);
 }
 //get directional input
 document.addEventListener("keydown", function(event) {

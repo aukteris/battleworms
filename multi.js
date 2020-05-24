@@ -19,6 +19,7 @@ app.get('/engine.js', function(req, res) {
 */
 
 var globalObjs = [];
+var tileId = 0;
 
 class V{
 	constructor(x, y){
@@ -59,13 +60,14 @@ class Tile
 {
 	constructor(pos, type)
 	{
-		this.id = globalObjs.length;
+		this.id = tileId;
 		this.alpha = 1;
 		this.pos = pos;
 		this.color = new Color(0, 255, 0);
 		this.type = type == null ? 0 : type; //0=collide, 1=snack, 2 = effect
 		this.effectData = null;
 		globalObjs.push(this);
+		tileId++;
 	}
 }
 class Snake
@@ -84,13 +86,42 @@ class Snake
 }
 
 var snakes = [];
+var clients = [];
 
 app.use(express.static('multiplayer'));
 
+// initial client connection, and define the events we listen for
 io.on('connection', function(socket){
+	clients.push(socket);
+
 	var snake = new Snake(socket.id);
-	snakes.push(snake);
+	snakes[clients.indexOf(socket)] = snake;
 	socket.emit('init', snake);
+	console.log(socket.id + " connected");
+
+	// handle client disconnect
+	socket.on('disconnect', function() {
+		// Cleanup the obj tile
+		snakes[clients.indexOf(socket)].parts.forEach(function(tile) {
+			globalObjs.splice(globalObjs.indexOf(tile), 1);
+		});
+		snakes.splice(clients.indexOf(socket), 1);
+		clients.splice(clients.indexOf(socket), 1);
+
+		console.log(socket.id + " disconnected");
+	});
+
+	// handle updates from the clients
+	socket.on('update', function(clientSnake){
+		clientSnake.parts.forEach(function(tile, index) {
+			if (index < snakes[clients.indexOf(socket)].parts.length) {
+				snakes[clients.indexOf(socket)].parts[index].pos.x = tile.pos.x;
+				snakes[clients.indexOf(socket)].parts[index].pos.y = tile.pos.y;
+			}
+		});
+
+		io.emit('update', snakes);
+	});
 });
 
 http.listen(3000, function() {
