@@ -12,6 +12,10 @@ function AddVs(v1, v2)
 {
 	return new V(v1.x + v2.x, v1.y + v2.y);
 }
+function SubVs(v1, v2)
+{
+	return new V(v1.x - v2.x, v1.y - v2.y);
+}
 function CompareVs(v1, v2)
 {
 	return v1.x == v2.x && v1.y == v2.y;
@@ -30,4 +34,9 @@ class Color{
 }
 function Rand(min, max) {
   return Math.floor(min + Math.random() * (max + 1 - min));
+}
+
+function RandomChoice(arr)
+{
+	return arr[Rand(0, arr.length)]
 }

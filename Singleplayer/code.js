@@ -11,7 +11,7 @@ var width = 25;
 var height = 25;
 var ticks = 0;
 var gridSize = 10;
-var gameUpdateRate = 1; //after 5 ticks
+var tickRate = 10; //after 5 ticks
 var objs = []; //all tiles that should be displayed
 var snakes = [];
 var clientSnakeIndex = 0; //testing
@@ -27,13 +27,14 @@ class Tile
 {
 	constructor(pos, type)
 	{
+		this.alpha = 1;
 		this.pos = pos;
 		this.color = new Color(0, 255, 0);
 		this.type = type == null ? 0 : type; //0=collide, 1=snack, 2 = effect
+		this.effectData = null;
 		objs.push(this);
 	}
 }
-
 class Snake
 {
 	constructor()
@@ -73,7 +74,7 @@ OnSnackEaten();//create new snack
 function Update()
 {
 	ticks += 1;
-	if(ticks >= gameUpdateRate)
+	if(ticks >= tickRate)
 	{
 		ticks = 0;
 		UpdatePositions();
@@ -82,8 +83,9 @@ function Update()
 	}
 	//update the game (visual) (collision)
 	ctx.clearRect(0, 0, width*gridSize, height*gridSize);
-	objs.forEach(function(tile)
+	objs.forEach(function(tile, index)
 	{
+		ctx.globalAlpha = tile.alpha;
 		ctx.fillStyle = tile.color.ToString();
 		ctx.fillRect(tile.pos.x*gridSize, (height * gridSize) - ((tile.pos.y+1) * gridSize), gridSize, gridSize);
 	});
@@ -104,7 +106,9 @@ function CollisionTesting()
 				if(CompareVs(snake.parts[0].pos, tile.pos) && tile != snake.parts[0])
 				{
 					if(tile.type == 0)
+					{
 						snake.collided = true;
+					}
 					if(tile.type == 1)
 					{
 						//Destroy this snack
@@ -168,5 +172,5 @@ document.addEventListener("keydown", function(event) {
 });
 
 
-setInterval(Update, 150);
+setInterval(Update, 15);
 
