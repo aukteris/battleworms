@@ -18,6 +18,8 @@ app.get('/engine.js', function(req, res) {
 });
 */
 
+var objs = [];
+
 class V{
 	constructor(x, y){
 		this.x = x;
