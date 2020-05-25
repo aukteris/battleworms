@@ -84,8 +84,8 @@ for(var x = 0; x < width; x++)
 		for(var i = 0; i < 7; i++){
 			t.effectData.keyframes[i] = new Color(0, 0, 200);
 		}
-		t.alpha = Rand(y, x)/100
-		decay = Math.max(x, 8)
+		t.alpha = Rand(y, x)/100;
+		decay = Math.max(x, 8);
 		t.decay = decay;
 	}
 }
@@ -163,29 +163,25 @@ function GameUpdate()
 	snakes.forEach(function(snake, indx){
 		snake.lastDirection = snake.direction;
 		var lastPos = snake.lastPos;
-		if(snake.pendingDeath)
-		{
-			snakes.splice(indx, 1);
-			return;
-		}
+
 		snake.parts.forEach(function(part, index){
-			if(index != 0 && !snake.pendingDeath)
+			if(index != 0)
 			{
 				var newlastpos = new V(part.pos.x, part.pos.y);
 				part.pos.x = lastPos.x;
 				part.pos.y = lastPos.y;
 				lastPos = newlastpos;
 			}
-			if(snake.collided && !snake.pendingDeath)
+			if(snake.collided)
 			{
 				part.color = new Color(255, 0, 0);
 				part.decay = 4.5 * (index) + 10;
 			}
-			
-
 		});
 		if(snake.collided)
-			snake.pendingDeath = true;
+		{
+			snakes.splice(indx, 1);
+		}
 	});
 }
 //get directional input
