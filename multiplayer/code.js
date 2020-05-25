@@ -23,10 +23,6 @@ document.getElementById("theCanvas").width = width * gridSize;
 document.getElementById("theCanvas").height = height * gridSize;
 ctx = document.getElementById("theCanvas").getContext('2d');
 
-
-
-
-
 class Tile
 {
 	constructor(pos, type)
@@ -133,16 +129,6 @@ function Update()
 		ctx.fillStyle = colorToString(tile.color);
 		ctx.fillRect(tile.pos.x*gridSize, (height * gridSize) - ((tile.pos.y+1) * gridSize), gridSize, gridSize);
 	});
-	snakes.forEach(function(snake)
-	{
-		snake.parts.forEach(function(tile, index)
-		{
-			ctx.globalAlpha = tile.alpha;
-			ctx.fillStyle = colorToString(tile.color);
-			ctx.fillRect(tile.pos.x*gridSize, (height * gridSize) - ((tile.pos.y+1) * gridSize), gridSize, gridSize);
-		});
-	});
-
 }
 function OnSnackEaten()
 {
