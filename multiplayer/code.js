@@ -90,7 +90,7 @@ socket.on('update', function(allSnakes){
 	allSnakes.forEach(function(snake){
 		if (snake.id != connectionId) {
 			// add new snakes to the tracked clients
-			if(typeof clients.indexOf(snake.id) == "undefined") {
+			if(clients.indexOf(snake.id) == -1) {
 				snake.parts.forEach(function(tile){
 					objs.push(tile);
 				});
@@ -103,7 +103,7 @@ socket.on('update', function(allSnakes){
 				snake.parts.forEach(function(tile, index) {
 					if (typeof playerLocalSnake.parts[index] == "undefined") {
 						objs.push(tile);
-						playerLocalSnake.parts[index] = tile
+						playerLocalSnake.parts[index] = tile;
 					} else {
 						playerLocalSnake.parts[index].pos.x = tile.pos.x;
 						playerLocalSnake.parts[index].pos.y = tile.pos.y;
