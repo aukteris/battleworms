@@ -40,3 +40,31 @@ function RandomChoice(arr)
 {
 	return arr[Rand(0, arr.length)]
 }
+var shuffle = function (array) {
+
+	var currentIndex = array.length;
+	var temporaryValue, randomIndex;
+
+	// While there remain elements to shuffle...
+	while (0 !== currentIndex) {
+		// Pick a remaining element...
+		randomIndex = Math.floor(Math.random() * currentIndex);
+		currentIndex -= 1;
+
+		// And swap it with the current element.
+		temporaryValue = array[currentIndex];
+		array[currentIndex] = array[randomIndex];
+		array[randomIndex] = temporaryValue;
+	}
+
+	return array;
+
+};
+function RandomColor()
+{
+	ranges = [Rand(0, 255), Rand(50, 220), Rand(0, 255)];
+	shuffle(ranges);
+	//multipliers
+	color = new Color(ranges[0], ranges[1], ranges[2]);
+	return color;
+}

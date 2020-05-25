@@ -49,6 +49,7 @@ class Snake
 {
 	constructor()
 	{
+		this.colorData = RandomColor(); 
 		this.direction = new V(0, -1);//going down
 		this.parts = [];
 		this.pendingDeath = false; //waiting to be removed
@@ -56,6 +57,10 @@ class Snake
 		this.parts.push(new Tile(new V(5, 5)), new Tile(new V(5, 6)), new Tile(new V(5, 7)));
 		this.collided = false;
 		this.lastDirection = new V(0, -1);
+		this.parts.forEach(function(part)
+		{
+			part.color = this.colorData[0];
+		});
 	}
 }
 
