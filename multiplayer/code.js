@@ -18,40 +18,86 @@ var snakes = [];
 var clients = [];
 var connectionId;
 
-var clientSnakeIndex = 0; //testing
 document.getElementById("theCanvas").width = width * gridSize;
 document.getElementById("theCanvas").height = height * gridSize;
 ctx = document.getElementById("theCanvas").getContext('2d');
 
 class Tile
 {
-	constructor(pos, type)
+	constructor(pos, type, color, serverTile)
 	{
-		this.id;
-		this.alpha = 1;
-		this.pos = pos;
-		this.color = new Color(0, 255, 0);
-		this.type = type == null ? 0 : type; //0=collide, 1=snack, 2 = effect
-		this.effectData = null;
+		this.effectData = new EffectData();
+		this.decay = Infinity;
+
+		if (serverTile == null) {
+			this.alpha = 1;
+			this.pos = pos;
+			this.color = color == null ? new Color(0, 255, 0) : color;
+			this.type = type == null ? 0 : type; //0=collide, 1=snack, 2 = effect
+			
+		} else {
+			this.alpha = serverTile.alpha;
+			this.pos = new V(serverTile.pos.x, serverTile.pos.y);
+			this.color = new Color(serverTile.color.r,serverTile.color.g,serverTile.color.b);
+			this.type = serverTile.type;
+		}
+
 		objs.push(this);
+	}
+}
+class EffectData
+{
+	constructor()
+	{
+		this.keyframes = {5: new Color(255, 255, 255)}//when decaying
 	}
 }
 class Snake
 {
-	constructor()
+	constructor(serverSnake)
 	{
-		this.direction = new V(0, -1);//going down
+		this.serverId = null;
 		this.parts = [];
-		this.pendingDeath = false; //waiting to be removed
-		this.lastPos = new V(5, 5);//last position of the head
-		this.parts.push(new Tile(new V(5, 5)), new Tile(new V(5, 6)), new Tile(new V(5, 7)));
-		this.collided = false;
-		this.lastDirection = new V(0, -1);
-	}
-}
+		this.dead = false;
 
-function colorToString(color) {
-	return "rgb("+color.r+","+color.g+","+color.b+")";
+		if (serverSnake == null) {
+			this.direction = new V(0, -1);//going down
+			this.pendingDeath = false; //waiting to be removed
+			this.lastPos = new V(5, 5);//last position of the head
+			this.parts.push(new Tile(new V(5, 5)), new Tile(new V(5, 6)), new Tile(new V(5, 7)));
+			this.collided = false;
+			this.lastDirection = new V(0, -1);
+		} else {
+			this.serverId = serverSnake.serverId;
+			this.direction = new V(serverSnake.direction.x, serverSnake.direction.y);
+			this.pendingDeath = serverSnake.pendingDeath;
+			this.lastPos = new V(serverSnake.lastPos.x, serverSnake.lastPos.y);
+			this.collided = serverSnake.collided;
+			this.lastDirection = new V(serverSnake.lastDirection.x, serverSnake.lastDirection.y);
+
+			serverSnake.parts.forEach(function(tile) {
+				this.parts.push(new Tile(null, null, null, tile));
+			}, this)
+		}
+	}
+
+	// Handle snake death
+	die() {
+		this.dead = true;
+
+		console.log(this.parts);
+		this.parts.forEach(function(tile, index){
+			tile.color = new Color(255, 0, 0);
+			tile.decay = 4.5 * (index) + 10;
+		}, this);
+
+		this.parts = [];
+	}
+
+	// Handle snake respawn
+	respawn() {
+
+	}
 }
 
 //add borders
@@ -73,33 +119,28 @@ for(var y = 0; y < height; y++)
 //add a snake (for testing)
 socket.on("init", function(playerSnake)
 {
-	connectionId = playerSnake.id;
-	playerSnake.parts.forEach(function(tile){
-		objs.push(tile);
-	});
+	connectionId = playerSnake.serverId;
 	clients.push(connectionId);
-	snakes[clients.indexOf(connectionId)] = playerSnake;
+	snakes[clients.indexOf(connectionId)] = new Snake(playerSnake);
+	console.log(snakes);
 });
 
 //receive updates from the server, and draw all non-local snakes
 socket.on('update', function(allSnakes){
 	allSnakes.forEach(function(snake){
-		if (snake.id != connectionId) {
+		if (snake.serverId != connectionId) {
 			// add new snakes to the tracked clients
-			if(clients.indexOf(snake.id) == -1) {
-				snake.parts.forEach(function(tile){
-					objs.push(tile);
-				});
-				clients.push(snake.id);
-				snakes[clients.indexOf(snake.id)] = snake;
+			if(clients.indexOf(snake.serverId) == -1) {
+				clients.push(snake.serverId);
+				snakes[clients.indexOf(snake.serverId)] = new Snake(snake);
 
 			// update existing snakes
 			} else {
-				var playerLocalSnake = snakes[clients.indexOf(snake.id)];
+				var playerLocalSnake = snakes[clients.indexOf(snake.serverId)];
 				snake.parts.forEach(function(tile, index) {
 					if (typeof playerLocalSnake.parts[index] == "undefined") {
-						objs.push(tile);
-						playerLocalSnake.parts[index] = tile;
+						var newTile = new Tile(null, null, null, tile);
+						playerLocalSnake.parts[index] = newTile;
 					} else {
 						playerLocalSnake.parts[index].pos.x = tile.pos.x;
 						playerLocalSnake.parts[index].pos.y = tile.pos.y;
@@ -125,8 +166,13 @@ function Update()
 	ctx.clearRect(0, 0, width*gridSize, height*gridSize);
 	objs.forEach(function(tile, index)
 	{
+		tile.decay -= 1;
+		if(tile.decay <= 0)
+			objs.splice(index, 1);
+		if(tile.effectData.keyframes[tile.decay] != null)
+			tile.color = tile.effectData.keyframes[tile.decay];
 		ctx.globalAlpha = tile.alpha;
-		ctx.fillStyle = colorToString(tile.color);
+		ctx.fillStyle = tile.color.ToString();
 		ctx.fillRect(tile.pos.x*gridSize, (height * gridSize) - ((tile.pos.y+1) * gridSize), gridSize, gridSize);
 	});
 }
@@ -143,7 +189,7 @@ function CollisionTesting()
 		{
 			snakes.forEach(function(snake)
 			{
-				if(CompareVs(snake.parts[0].pos, tile.pos) && tile != snake.parts[0])
+				if(!snake.collided && CompareVs(snake.parts[0].pos, tile.pos) && tile != snake.parts[0])
 				{
 					if(tile.type == 0)
 					{
@@ -154,7 +200,7 @@ function CollisionTesting()
 						//Destroy this snack
 						objs.splice(index, 1);
 						OnSnackEaten();
-						snake.parts.push(new Tile(new V(0, 0)))
+						snake.parts.push(new Tile(new V(0, 0), 0, snake.color));
 					}
 				}
 			});
@@ -164,33 +210,36 @@ function CollisionTesting()
 function UpdatePositions()
 {
 	var tmpSnake = snakes[clients.indexOf(connectionId)];
-	tmpSnake.lastPos = tmpSnake.parts[0].pos;
-	if(!tmpSnake.collided)
+	if(!tmpSnake.collided) 
+	{
+		tmpSnake.lastPos = tmpSnake.parts[0].pos;
 		tmpSnake.parts[0].pos = AddVs(tmpSnake.parts[0].pos, tmpSnake.direction);
+	}
 }
 //All game logic happens here
 function GameUpdate()
 {
 	var tmpSnake = snakes[clients.indexOf(connectionId)];
-	tmpSnake.lastDirection = tmpSnake.direction;
-	var lastPos = tmpSnake.lastPos;
-	tmpSnake.parts.forEach(function(part, index){
-		if(index != 0 && !tmpSnake.pendingDeath)
-		{
-			var newlastpos = new V(part.pos.x, part.pos.y);
-			part.pos.x = lastPos.x;
-			part.pos.y = lastPos.y;
-			lastPos = newlastpos;
-		}
+	if (!tmpSnake.dead) 
+	{
+		tmpSnake.lastDirection = tmpSnake.direction;
+		var lastPos = tmpSnake.lastPos;
+		tmpSnake.parts.forEach(function(part, index){
+			if(index != 0)
+			{
+				var newlastpos = new V(part.pos.x, part.pos.y);
+				part.pos.x = lastPos.x;
+				part.pos.y = lastPos.y;
+				lastPos = newlastpos;
+			}
+		});
 		if(tmpSnake.collided)
 		{
-			part.color = new Color(255, 255, 255);
+			tmpSnake.die();
 		}
-	});
-	if(tmpSnake.collided)
-		tmpSnake.pendingDeath = true;
 
-	socket.emit('update', tmpSnake);
+		socket.emit('update', tmpSnake);
+	}
 }
 //get directional input
 document.addEventListener("keydown", function(event) {
@@ -207,10 +256,10 @@ document.addEventListener("keydown", function(event) {
   if (kC === "left") x = -1;
   if (kC === "right") x = 1;
   var dir = new V(x, y);
-  if(!CompareVs(AddVs(dir, snakes[clientSnakeIndex].lastDirection), new V(0, 0))) //so we can't go in on ourselves
-  	snakes[clientSnakeIndex].direction = dir
+  if(!CompareVs(AddVs(dir, snakes[clients.indexOf(connectionId)].lastDirection), new V(0, 0))) //so we can't go in on ourselves
+  		snakes[clients.indexOf(connectionId)].direction = dir;
 });
 
 
-setInterval(Update, 15);
+var timer = setInterval(Update, 15);
 

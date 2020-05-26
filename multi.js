@@ -2,9 +2,7 @@ var express = require('express');
 var app = express();
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
-
-var globalObjs = [];
-var tileId = 0;
+const Snake = require('./mclasses/snake.js');
 /*
 const V = require('./multiplayer/classes/v.js');
 const AddVs = require('./multiplayer/classes/addvs.js');
@@ -15,7 +13,9 @@ const Rand = require('./multiplayer/classes/rand.js');
 const RandomChoice = require('./multiplayer/classes/randomchoice.js');
 const Tile = require('./multiplayer/classes/tile.js');
 */
-const Snake = require('./mclasses/snake.js');
+
+var globalObjs = [];
+var tileId = 0;
 
 var snakes = [];
 var clients = [];
@@ -26,7 +26,8 @@ app.use(express.static('multiplayer'));
 io.on('connection', function(socket){
 	clients.push(socket);
 
-	var snake = new Snake(socket.id, globalObjs);
+	// create a new snake for the new player, and send it to him
+	var snake = new Snake(socket.id, 5, 8, 8, globalObjs);
 	snakes[clients.indexOf(socket)] = snake;
 	socket.emit('init', snake);
 	console.log(socket.id + " connected");
