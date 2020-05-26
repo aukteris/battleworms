@@ -82,16 +82,18 @@ class Snake
 	}
 
 	// Handle snake death
-	die() {
+	die(cb) {
 		this.dead = true;
 
-		console.log(this.parts);
 		this.parts.forEach(function(tile, index){
 			tile.color = new Color(255, 0, 0);
 			tile.decay = 4.5 * (index) + 10;
 		}, this);
 
 		this.parts = [];
+		
+		if (cb != null)
+			cb();
 	}
 
 	// Handle snake respawn
@@ -100,7 +102,7 @@ class Snake
 	}
 }
 
-//add borders
+//draw borders
 for(var x = 0; x < width; x++)
 {
 	var t = new Tile(new V(x, 0), 0);
@@ -125,6 +127,14 @@ socket.on("init", function(playerSnake)
 	console.log(snakes);
 });
 
+socket.on("disconnect", function(snakeId)
+{
+	var clientIndex = clients.indexOf(snakeId);
+	snakes[clientIndex].die();
+	snakes.splice(clientIndex, 1);
+	clients.splice(clientIndex, 1);
+});
+
 //receive updates from the server, and draw all non-local snakes
 socket.on('update', function(allSnakes){
 	allSnakes.forEach(function(snake){
@@ -137,6 +147,9 @@ socket.on('update', function(allSnakes){
 			// update existing snakes
 			} else {
 				var playerLocalSnake = snakes[clients.indexOf(snake.serverId)];
+
+				playerLocalSnake.collided = snake.collided;
+
 				snake.parts.forEach(function(tile, index) {
 					if (typeof playerLocalSnake.parts[index] == "undefined") {
 						var newTile = new Tile(null, null, null, tile);
@@ -146,6 +159,8 @@ socket.on('update', function(allSnakes){
 						playerLocalSnake.parts[index].pos.y = tile.pos.y;
 					}
 				});
+				if (snake.dead && !playerLocalSnake.dead)
+					playerLocalSnake.die();
 			}
 		}
 	});
@@ -222,23 +237,27 @@ function GameUpdate()
 	var tmpSnake = snakes[clients.indexOf(connectionId)];
 	if (!tmpSnake.dead) 
 	{
-		tmpSnake.lastDirection = tmpSnake.direction;
-		var lastPos = tmpSnake.lastPos;
-		tmpSnake.parts.forEach(function(part, index){
-			if(index != 0)
-			{
-				var newlastpos = new V(part.pos.x, part.pos.y);
-				part.pos.x = lastPos.x;
-				part.pos.y = lastPos.y;
-				lastPos = newlastpos;
-			}
-		});
 		if(tmpSnake.collided)
 		{
-			tmpSnake.die();
-		}
+			tmpSnake.die(function () {
+				socket.emit('update', tmpSnake);
+			});
 
-		socket.emit('update', tmpSnake);
+		} else {
+			tmpSnake.lastDirection = tmpSnake.direction;
+			var lastPos = tmpSnake.lastPos;
+			tmpSnake.parts.forEach(function(part, index){
+				if(index != 0)
+				{
+					var newlastpos = new V(part.pos.x, part.pos.y);
+					part.pos.x = lastPos.x;
+					part.pos.y = lastPos.y;
+					lastPos = newlastpos;
+				}
+			});
+
+			socket.emit('update', tmpSnake);
+		}
 	}
 }
 //get directional input

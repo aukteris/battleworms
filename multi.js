@@ -41,22 +41,32 @@ io.on('connection', function(socket){
 		snakes.splice(clients.indexOf(socket), 1);
 		clients.splice(clients.indexOf(socket), 1);
 
+		io.emit('disconnect', socket.id);
+
 		console.log(socket.id + " disconnected");
 	});
 
 	// handle updates from the clients
 	socket.on('update', function(clientSnake){
+		var thisSnake = snakes[clients.indexOf(socket)];
+
+		thisSnake.dead = clientSnake.dead;
+		thisSnake.collided = clientSnake.collided;
+
 		clientSnake.parts.forEach(function(tile, index) {
-			if (index < snakes[clients.indexOf(socket)].parts.length) {
-				snakes[clients.indexOf(socket)].parts[index].pos.x = tile.pos.x;
-				snakes[clients.indexOf(socket)].parts[index].pos.y = tile.pos.y;
+			if (index < thisSnake.parts.length) {
+				thisSnake.parts[index].pos.x = tile.pos.x;
+				thisSnake.parts[index].pos.y = tile.pos.y;
 			}
 		});
 
 		io.emit('update', snakes);
+
+		if (clientSnake.dead)
+			snakes[clients.indexOf(socket)].parts = [];
 	});
 });
 
-http.listen(3000, function() {
+http.listen(3100, function() {
 	console.log('listening on *:3000');
 });
