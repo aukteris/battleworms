@@ -8,13 +8,14 @@
 
 //initial variables
 var socket = io()
-var width = 25;
-var height = 25;
+var width = 50;
+var height = 50;
 var ticks = 0;
 var gridSize = 10;
 var tickRate = 10; //after 5 ticks
 var objs = []; //all tiles that should be displayed
 var snakes = [];
+var foods = [];
 var clients = [];
 var connectionId;
 
@@ -136,7 +137,12 @@ socket.on("disconnect", function(snakeId)
 });
 
 //receive updates from the server, and draw all non-local snakes
-socket.on('update', function(allSnakes){
+socket.on('update', function(payload){
+
+	var allSnakes = payload[0];
+	var allFoods = payload[1];
+
+	// Populate Snakes
 	allSnakes.forEach(function(snake){
 		if (snake.serverId != connectionId) {
 			// add new snakes to the tracked clients
@@ -162,6 +168,25 @@ socket.on('update', function(allSnakes){
 				if (snake.dead && !playerLocalSnake.dead)
 					playerLocalSnake.die();
 			}
+		} else if (!snake.dead) {
+			var playerLocalSnake = snakes[clients.indexOf(snake.serverId)];
+
+			snake.parts.forEach(function(tile, index) {
+				if (typeof playerLocalSnake.parts[index] == "undefined") {
+					var newTile = new Tile(null, null, null, tile);
+					playerLocalSnake.parts[index] = newTile;
+				}
+			});
+		}
+	});
+
+	// Populate foods, "snacks"
+	allFoods.forEach(function(tile, index) {
+		if (typeof foods[index] == "undefined") {
+			foods[index] = new Tile(null, null, null, tile);
+		} else {
+			foods[index].pos.x = tile.pos.x;
+			foods[index].pos.y = tile.pos.y;
 		}
 	});
 });
@@ -212,10 +237,14 @@ function CollisionTesting()
 					}
 					if(tile.type == 1)
 					{
+						/*
 						//Destroy this snack
-						objs.splice(index, 1);
 						OnSnackEaten();
 						snake.parts.push(new Tile(new V(0, 0), 0, snake.color));
+						*/
+						objs.splice(index, 1);
+						foods.splice(foods.indexOf(tile), 1);
+						socket.emit('eatfood', tile);
 					}
 				}
 			});
