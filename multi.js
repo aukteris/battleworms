@@ -15,13 +15,16 @@ const SubVs = require('./multiplayer/classes/subvs.js');
 const RandomChoice = require('./multiplayer/classes/randomchoice.js');
 */
 
+// Settings
+var port = 3100;
+var height = 50;
+var width = 50;
+
 // For tracking objects
 var globalObjs = [];
 var snakes = [];
 var foods = [];
 var clients = [];
-var height = 50;
-var width = 50;
 
 //draw borders
 for(var x = 0; x < width; x++)
@@ -117,6 +120,7 @@ io.on('connection', function(socket){
 			snakes[clients.indexOf(socket)].parts = [];
 	});
 
+	// handles eating the snack, growing the snake, and creating a new snack
 	socket.on('eatfood', function(foodTile) {
 		foods.forEach(function(tile){
 			if (CompareVs(tile.pos, foodTile.pos)) {
@@ -129,6 +133,6 @@ io.on('connection', function(socket){
 	});
 });
 
-http.listen(3100, function() {
-	console.log('listening on *:3000');
+http.listen(port, function() {
+	console.log('listening on *:'+port);
 });
