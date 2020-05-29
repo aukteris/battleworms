@@ -22,13 +22,19 @@
 				transform: translate(-50%);
 			}
 
+			#loseState {
+				z-index:4;
+				display:none;
+			}
+
 			#newPlayerState {
 				z-index:3;
-				display:none;
+				
 			}
 
 			#welcomeState {
 				z-index:2;
+				display:none;
 			}
 
 			#playState {
@@ -95,6 +101,9 @@
 			h2 {
 				font-family:akashi;
 				font-size:22pt;
+			}
+
+			#newPlayerState h2 {
 				padding-top:150px;
 			}
 
@@ -108,7 +117,8 @@
 			<div id="newPlayerState" class="gameState">
 				<h2>welcome to worm hell</h2>
 				<br>
-				Enter your name:<input type="text" />
+				Enter your name:<input type="text" /><br><br>
+				<button class="button buttonHover">SUBMIT</button>
 			</div>
 			<div id="welcomeState" class="gameState">
 				<h1>battleworms</h1>
@@ -166,6 +176,58 @@
 			<div id="playState" class="gameState">
 				<br>
 				<canvas id="theCanvas" style="background: #000000; margin: 0 auto; display: block;" width="500px" height="500px"></canvas>
+			</div>
+			<div id="loseState" class="gameState">
+				<h2>slow worms become bait</h2>
+				<h3>final score: 50000</h3>
+				<table class="leaderboard">
+					<tr>
+						<th>Player</th>
+						<th>Score</th>
+					</tr>
+					<tr>
+						<td>aukteris</td>
+						<td>50000</td>
+					</tr>
+					<tr>
+						<td>aukteris</td>
+						<td>50000</td>
+					</tr>
+					<tr>
+						<td>aukteris</td>
+						<td>50000</td>
+					</tr>
+					<tr>
+						<td>aukteris</td>
+						<td>50000</td>
+					</tr>
+					<tr>
+						<td>aukteris</td>
+						<td>50000</td>
+					</tr>
+					<tr>
+						<td>aukteris</td>
+						<td>50000</td>
+					</tr>
+					<tr>
+						<td>aukteris</td>
+						<td>50000</td>
+					</tr>
+					<tr>
+						<td>aukteris</td>
+						<td>50000</td>
+					</tr>
+					<tr>
+						<td>aukteris</td>
+						<td>50000</td>
+					</tr>
+					<tr>
+						<td>aukteris</td>
+						<td>50000</td>
+					</tr>
+				</table>
+				<br>
+				<button class="button buttonHover">RETRY</button>
 			</div>
 		</div>
 	</body>
