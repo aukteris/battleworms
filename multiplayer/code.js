@@ -42,7 +42,9 @@ class Tile
 			this.color = new Color(serverTile.color.r,serverTile.color.g,serverTile.color.b);
 			this.type = serverTile.type;
 		}
-
+		this.rounded = true
+		this.visualpos = this.pos.copy();
+		this.lastPos = this.pos.copy();
 		objs.push(this);
 	}
 }
@@ -80,6 +82,7 @@ class Snake
 				this.parts.push(new Tile(null, null, null, tile));
 			}, this)
 		}
+		this.parts[this.parts.length - 1].rounded = false;
 	}
 
 	// Handle snake death
@@ -95,6 +98,14 @@ class Snake
 		
 		if (cb != null)
 			cb();
+	}
+
+	growSnake(tile, index) {
+		this.parts[index] = tile;
+		if (index == this.parts.length - 1) {
+			this.parts[this.parts.length -2].rounded = true;
+			this.parts[this.parts.length -1].rounded = false;
+		} 
 	}
 
 	// Handle snake respawn
@@ -159,7 +170,7 @@ socket.on('update', function(payload){
 				snake.parts.forEach(function(tile, index) {
 					if (typeof playerLocalSnake.parts[index] == "undefined") {
 						var newTile = new Tile(null, null, null, tile);
-						playerLocalSnake.parts[index] = newTile;
+						playerLocalSnake.growSnake(newTile,index);
 					} else {
 						playerLocalSnake.parts[index].pos.x = tile.pos.x;
 						playerLocalSnake.parts[index].pos.y = tile.pos.y;
@@ -174,7 +185,7 @@ socket.on('update', function(payload){
 			snake.parts.forEach(function(tile, index) {
 				if (typeof playerLocalSnake.parts[index] == "undefined") {
 					var newTile = new Tile(null, null, null, tile);
-					playerLocalSnake.parts[index] = newTile;
+					playerLocalSnake.growSnake(newTile, index);
 				}
 			});
 		}
@@ -197,15 +208,24 @@ function Update()
 	ticks += 1;
 	if(ticks >= tickRate)
 	{
+		objs.forEach(function(tile)
+		{
+			tile.lastPos = tile.pos.copy(); //this happens before updating position
+			tile.visualpos = tile.pos.copy();
+		});
 		ticks = 0;
 		UpdatePositions();
 		CollisionTesting();
 		GameUpdate();
 	}
 	//update the game (visual) (collision)
-	ctx.clearRect(0, 0, width*gridSize, height*gridSize);
+	ctx.clearRect(0, 0, width*gridSize, height*gridSize);//clear the screen to draw new shapes
 	objs.forEach(function(tile, index)
 	{
+		//tween
+		tile.visualpos.x = tile.visualpos.x + (1/tickRate) * (tile.pos.x - tile.lastPos.x);
+		tile.visualpos.y = tile.visualpos.y + (1/tickRate) * (tile.pos.y - tile.lastPos.y);
+
 		tile.decay -= 1;
 		if(tile.decay <= 0)
 			objs.splice(index, 1);
@@ -213,7 +233,10 @@ function Update()
 			tile.color = tile.effectData.keyframes[tile.decay];
 		ctx.globalAlpha = tile.alpha;
 		ctx.fillStyle = tile.color.ToString();
-		ctx.fillRect(tile.pos.x*gridSize, (height * gridSize) - ((tile.pos.y+1) * gridSize), gridSize, gridSize);
+		ctx.fillRect(tile.visualpos.x*gridSize, (height * gridSize) - ((tile.visualpos.y+1) * gridSize), gridSize, gridSize);
+		if(tile.rounded)
+			roundRect(ctx, tile.lastPos.x*gridSize, (height * gridSize) - ((tile.lastPos.y+1) * gridSize), gridSize, gridSize, 3);
+		ctx.fill();
 	});
 }
 function OnSnackEaten()
@@ -276,6 +299,10 @@ function GameUpdate()
 			tmpSnake.lastDirection = tmpSnake.direction;
 			var lastPos = tmpSnake.lastPos;
 			tmpSnake.parts.forEach(function(part, index){
+				// if(index == tmpSnake.parts.length - 1)
+				// 	part.rounded = false;
+				// else
+				// 	part.rounded = true;
 				if(index != 0)
 				{
 					var newlastpos = new V(part.pos.x, part.pos.y);
@@ -303,6 +330,7 @@ document.addEventListener("keydown", function(event) {
   if (kC === "down") y = -1;
   if (kC === "left") x = -1;
   if (kC === "right") x = 1;
+  if(x == 0 && y == 0) return;
   var dir = new V(x, y);
   if(!CompareVs(AddVs(dir, snakes[clients.indexOf(connectionId)].lastDirection), new V(0, 0))) //so we can't go in on ourselves
   		snakes[clients.indexOf(connectionId)].direction = dir;
@@ -311,3 +339,28 @@ document.addEventListener("keydown", function(event) {
 
 var timer = setInterval(Update, 15);
 
+function roundRect(ctx, x, y, width, height, radius) {
+  if (typeof radius === 'undefined') {
+    radius = 5;
+  }
+  if (typeof radius === 'number') {
+    radius = {tl: radius, tr: radius, br: radius, bl: radius};
+  } else {
+    var defaultRadius = {tl: 0, tr: 0, br: 0, bl: 0};
+    for (var side in defaultRadius) {
+      radius[side] = radius[side] || defaultRadius[side];
+    }
+  }
+  ctx.beginPath();
+  ctx.moveTo(x + radius.tl, y);
+  ctx.lineTo(x + width - radius.tr, y);
+  ctx.quadraticCurveTo(x + width, y, x + width, y + radius.tr);
+  ctx.lineTo(x + width, y + height - radius.br);
+  ctx.quadraticCurveTo(x + width, y + height, x + width - radius.br, y + height);
+  ctx.lineTo(x + radius.bl, y + height);
+  ctx.quadraticCurveTo(x, y + height, x, y + height - radius.bl);
+  ctx.lineTo(x, y + radius.tl);
+  ctx.quadraticCurveTo(x, y, x + radius.tl, y);
+  ctx.closePath();
+
+}

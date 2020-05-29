@@ -29,6 +29,7 @@ class Tile
 	{
 		this.alpha = 1;
 		this.pos = pos;
+		this.visualpos = pos;
 		this.color = color == null ? new Color(0, 255, 0) : color;
 		this.type = type == null ? 0 : type; //0=collide, 1=snack, 2 = effect
 		this.effectData = new EffectData();
@@ -80,12 +81,11 @@ for(var x = 0; x < width; x++)
 {
 	for(var y = 0; y < height; y++)
 	{
-		var t = new Tile(new V(x, y), 2, new Color(255, 0, 255));
-		for(var i = 0; i < 7; i++){
-			t.effectData.keyframes[i] = new Color(0, 0, 200);
-		}
-		t.alpha = Rand(y, x)/100;
-		decay = Math.max(x, 8);
+		var t = new Tile(new V(x, y), 2, new Color(255*(x%3), 0, 255*(y%3)));
+		t.effectData.keyframes = {}
+		t.alpha = 1
+		center = new V(width/2, height/2);
+		decay = Math.sqrt(Math.pow(center.x - x, 2) + Math.pow(center.y - y, 2));
 		t.decay = decay;
 	}
 }

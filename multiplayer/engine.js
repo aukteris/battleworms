@@ -7,6 +7,10 @@ class V{
 			return this.x * this.y;
 		}
 	}
+	copy()
+	{
+		return new V(this.x, this.y);
+	}
 }
 function AddVs(v1, v2)
 {
