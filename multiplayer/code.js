@@ -154,6 +154,8 @@ socket.on("disconnect", function(snakeId)
 
 //receive updates from the server, and draw all non-local snakes
 socket.on('update', function(payload){
+	if (timer == null)
+		timer = setInterval(Update, 15);
 
 	var allSnakes = payload[0];
 	var allFoods = payload[1];
@@ -365,8 +367,6 @@ function onLoad() {
 	document.getElementById("theCanvas").width = width * gridSize;
 	document.getElementById("theCanvas").height = height * gridSize;
 	ctx = document.getElementById("theCanvas").getContext('2d');
-
-	timer = setInterval(Update, 15);
 }
 
 function changeState(state) {
