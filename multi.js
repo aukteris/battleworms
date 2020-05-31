@@ -19,6 +19,7 @@ const RandomChoice = require('./multiplayer/classes/randomchoice.js');
 var port = 3100;
 var height = 50;
 var width = 50;
+var intervalRate = 15;
 
 // For tracking objects
 var globalObjs = [];
@@ -110,12 +111,6 @@ io.on('connection', function(socket){
 			}
 		});
 
-		var payload = [];
-		payload.push(snakes);
-		payload.push(foods);
-
-		io.emit('update', payload);
-
 		if (clientSnake.dead)
 			snakes[clients.indexOf(socket)].parts = [];
 	});
@@ -141,6 +136,16 @@ io.on('connection', function(socket){
 		socket.emit('start', snake);
 	});
 });
+
+function sendUpdate() {
+	var payload = [];
+	payload.push(snakes);
+	payload.push(foods);
+
+	io.emit('update', payload);
+}
+
+var updateInterval = setInterval(sendUpdate, intervalRate);
 
 http.listen(port, function() {
 	console.log('listening on *:'+port);
