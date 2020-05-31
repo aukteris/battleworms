@@ -147,8 +147,10 @@ socket.on("start", function(playerSnake) {
 socket.on("disconnect", function(snakeId)
 {
 	var clientIndex = clients.indexOf(snakeId);
-	snakes[clientIndex].die();
-	snakes.splice(clientIndex, 1);
+	if (snakes[clientIndex] != null) {
+		snakes[clientIndex].die();
+		snakes.splice(clientIndex, 1);
+	}
 	clients.splice(clientIndex, 1);
 });
 
@@ -162,39 +164,41 @@ socket.on('update', function(payload){
 
 	// Populate Snakes
 	allSnakes.forEach(function(snake){
-		if (snake.serverId != connectionId) {
-			// add new snakes to the tracked clients
-			if(clients.indexOf(snake.serverId) == -1) {
-				clients.push(snake.serverId);
-				snakes[clients.indexOf(snake.serverId)] = new Snake(snake);
+		if (snake != null) {
+			if (snake.serverId != connectionId) {
+				// add new snakes to the tracked clients
+				if(clients.indexOf(snake.serverId) == -1) {
+					clients.push(snake.serverId);
+					snakes[clients.indexOf(snake.serverId)] = new Snake(snake);
 
-			// update existing snakes
-			} else {
+				// update existing snakes
+				} else {
+					var playerLocalSnake = snakes[clients.indexOf(snake.serverId)];
+
+					playerLocalSnake.collided = snake.collided;
+
+					snake.parts.forEach(function(tile, index) {
+						if (typeof playerLocalSnake.parts[index] == "undefined") {
+							var newTile = new Tile(null, null, null, tile);
+							playerLocalSnake.growSnake(newTile,index);
+						} else {
+							playerLocalSnake.parts[index].pos.x = tile.pos.x;
+							playerLocalSnake.parts[index].pos.y = tile.pos.y;
+						}
+					});
+					if (snake.dead && !playerLocalSnake.dead)
+						playerLocalSnake.die();
+				}
+			} else if (!snake.dead) {
 				var playerLocalSnake = snakes[clients.indexOf(snake.serverId)];
-
-				playerLocalSnake.collided = snake.collided;
 
 				snake.parts.forEach(function(tile, index) {
 					if (typeof playerLocalSnake.parts[index] == "undefined") {
 						var newTile = new Tile(null, null, null, tile);
-						playerLocalSnake.growSnake(newTile,index);
-					} else {
-						playerLocalSnake.parts[index].pos.x = tile.pos.x;
-						playerLocalSnake.parts[index].pos.y = tile.pos.y;
+						playerLocalSnake.growSnake(newTile, index);
 					}
 				});
-				if (snake.dead && !playerLocalSnake.dead)
-					playerLocalSnake.die();
 			}
-		} else if (!snake.dead) {
-			var playerLocalSnake = snakes[clients.indexOf(snake.serverId)];
-
-			snake.parts.forEach(function(tile, index) {
-				if (typeof playerLocalSnake.parts[index] == "undefined") {
-					var newTile = new Tile(null, null, null, tile);
-					playerLocalSnake.growSnake(newTile, index);
-				}
-			});
 		}
 	});
 
