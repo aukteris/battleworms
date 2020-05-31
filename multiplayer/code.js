@@ -230,8 +230,8 @@ function Update()
 	objs.forEach(function(tile, index)
 	{
 		//tween
-		tile.visualpos.x = tile.visualpos.x + (1/tickRate) * (tile.pos.x - tile.lastPos.x);
-		tile.visualpos.y = tile.visualpos.y + (1/tickRate) * (tile.pos.y - tile.lastPos.y);
+		tile.visualpos.x = tile.lastPos.x + (ticks/tickRate) * (tile.pos.x - tile.lastPos.x);
+		tile.visualpos.y = tile.lastPos.y + (ticks/tickRate) * (tile.pos.y - tile.lastPos.y);
 
 		tile.decay -= 1;
 		if(tile.decay <= 0)
