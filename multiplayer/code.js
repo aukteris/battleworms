@@ -13,15 +13,17 @@ var height = 50;
 var ticks = 0;
 var gridSize = 10;
 var tickRate = 10; //after 5 ticks
+
+// Tracking for various objects
 var objs = []; //all tiles that should be displayed
 var snakes = [];
 var foods = [];
 var clients = [];
 var connectionId;
-
-document.getElementById("theCanvas").width = width * gridSize;
-document.getElementById("theCanvas").height = height * gridSize;
-ctx = document.getElementById("theCanvas").getContext('2d');
+var gameState = "newPlayerState";
+var playerName;
+var ctx;
+var timer;
 
 class Tile
 {
@@ -55,6 +57,7 @@ class EffectData
 		this.keyframes = {5: new Color(255, 255, 255)}//when decaying
 	}
 }
+
 class Snake
 {
 	constructor(serverSnake)
@@ -131,12 +134,14 @@ for(var y = 0; y < height; y++)
 }
 
 //add a snake (for testing)
-socket.on("init", function(playerSnake)
-{
-	connectionId = playerSnake.serverId;
+socket.on("init", function(playerId) {
+	connectionId = playerId;
 	clients.push(connectionId);
+});
+
+// start the game
+socket.on("start", function(playerSnake) {
 	snakes[clients.indexOf(connectionId)] = new Snake(playerSnake);
-	console.log(snakes);
 });
 
 socket.on("disconnect", function(snakeId)
@@ -214,9 +219,11 @@ function Update()
 			tile.visualpos = tile.pos.copy();
 		});
 		ticks = 0;
-		UpdatePositions();
-		CollisionTesting();
-		GameUpdate();
+		if (snakes[clients.indexOf(connectionId)] != null) {
+			UpdatePositions();
+			CollisionTesting();
+			GameUpdate();
+		}
 	}
 	//update the game (visual) (collision)
 	ctx.clearRect(0, 0, width*gridSize, height*gridSize);//clear the screen to draw new shapes
@@ -260,11 +267,6 @@ function CollisionTesting()
 					}
 					if(tile.type == 1)
 					{
-						/*
-						//Destroy this snack
-						OnSnackEaten();
-						snake.parts.push(new Tile(new V(0, 0), 0, snake.color));
-						*/
 						objs.splice(index, 1);
 						foods.splice(foods.indexOf(tile), 1);
 						socket.emit('eatfood', tile);
@@ -293,16 +295,13 @@ function GameUpdate()
 		{
 			tmpSnake.die(function () {
 				socket.emit('update', tmpSnake);
+				changeState("loseState");
 			});
 
 		} else {
 			tmpSnake.lastDirection = tmpSnake.direction;
 			var lastPos = tmpSnake.lastPos;
 			tmpSnake.parts.forEach(function(part, index){
-				// if(index == tmpSnake.parts.length - 1)
-				// 	part.rounded = false;
-				// else
-				// 	part.rounded = true;
 				if(index != 0)
 				{
 					var newlastpos = new V(part.pos.x, part.pos.y);
@@ -316,6 +315,7 @@ function GameUpdate()
 		}
 	}
 }
+
 //get directional input
 document.addEventListener("keydown", function(event) {
   //console.log(event.code);
@@ -335,9 +335,6 @@ document.addEventListener("keydown", function(event) {
   if(!CompareVs(AddVs(dir, snakes[clients.indexOf(connectionId)].lastDirection), new V(0, 0))) //so we can't go in on ourselves
   		snakes[clients.indexOf(connectionId)].direction = dir;
 });
-
-
-var timer = setInterval(Update, 15);
 
 function roundRect(ctx, x, y, width, height, radius) {
   if (typeof radius === 'undefined') {
@@ -362,5 +359,28 @@ function roundRect(ctx, x, y, width, height, radius) {
   ctx.lineTo(x, y + radius.tl);
   ctx.quadraticCurveTo(x, y, x + radius.tl, y);
   ctx.closePath();
+}
 
+function onLoad() {
+	document.getElementById("theCanvas").width = width * gridSize;
+	document.getElementById("theCanvas").height = height * gridSize;
+	ctx = document.getElementById("theCanvas").getContext('2d');
+
+	timer = setInterval(Update, 15);
+}
+
+function changeState(state) {
+	document.getElementById(gameState).classList.remove("activeState");
+	document.getElementById(state).classList.add("activeState");
+	gameState = state;
+}
+
+function submitName() {
+	playerName = document.getElementsByName("playerName")[0].value;
+	changeState("welcomeState");
+}
+
+function startGame() {
+	socket.emit('start');
+	changeState("playState");
 }

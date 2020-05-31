@@ -1,19 +1,244 @@
 <!DOCTYPE html>
 <html>
 	<head>
-		<title>Worms</title>
+		<title>battleworms</title>
 		<style type="text/css">
 			body, html
 			{
+				font-family: "Trebuchet MS", Arial, Helvetica, sans-serif;
 				background-color: #292929;
+				color: white;
 			}
+
+			#content {
+				position:relative;
+			}
+
+			.gameState {
+				text-align: center;
+				position:absolute;
+				margin: 0 auto;
+				left:50%;
+				transform: translate(-50%);
+				display:none;
+			}
+
+			.activeState {
+				display:block;
+			}
+
+			#loseState {
+				z-index:4;
+			}
+
+			#newPlayerState {
+				z-index:3;
+			}
+
+			#welcomeState {
+				z-index:2;
+			}
+
+			#playState {
+				z-index:1;
+			}
+
+			#gameBoard {
+				z-index:0;
+				display:block;
+			}
+
+
+			.leaderboard {
+				width:auto;
+				margin: 0 auto;
+				border-collapse: collapse;
+				border: 1px solid #292929;
+
+			}
+
+			.leaderboard th {
+				background-color: #e84f17;
+				color:black;
+			}
+
+			.leaderboard tr:nth-child(even){
+				background-color:#292929;
+			}
+
+			.leaderboard td {
+				padding:4px 22px;
+			}
+
+			.button {
+				background-color: #dedede; /* Green */
+				border: none;
+				color: white;
+				padding: 16px 32px;
+				text-align: center;
+				text-decoration: none;
+				display: inline-block;
+				font-size: 16px;
+				margin: 4px 2px;
+				transition-duration: 0.4s;
+				cursor: pointer;
+			}
+
+			.buttonHover {
+				background-color: #292929;
+				color: white; 
+				border: 2px solid #dedede;
+			}
+
+			.buttonHover:hover {
+				background-color: #dedede;
+				color: black;
+			}
+
+			@font-face {
+				font-family:akashi;
+				src: url(akashi.woff);
+			}
+
+			h1 {
+				font-family:akashi;
+				font-size: 32pt;
+			}
+
+			h2 {
+				font-family:akashi;
+				font-size:22pt;
+			}
+
+			#newPlayerState h2 {
+				padding-top:150px;
+			}
+
 		</style>
-	</head>
-	<body>
-		<br>
-		<canvas id="theCanvas" style="background: #000000; margin: 0 auto; display: block;" width="500px" height="500px"></canvas>
 		<script src="/socket.io/socket.io.js"></script>
 		<script src="engine.js"></script>
 		<script src="code.js"></script>
+	</head>
+	<body onload="onLoad()">
+		<div id="content">
+			<div id="newPlayerState" class="gameState activeState">
+				<h2>welcome to worm hell</h2>
+				<br>
+				Enter your name:<input type="text" name="playerName" /><br><br>
+				<button class="button buttonHover" onClick="submitName()">SUBMIT</button>
+			</div>
+			<div id="welcomeState" class="gameState">
+				<h1>battleworms</h1>
+				<br>
+				<table class="leaderboard">
+					<tr>
+						<th>Player</th>
+						<th>Score</th>
+					</tr>
+					<tr>
+						<td>aukteris</td>
+						<td>50000</td>
+					</tr>
+					<tr>
+						<td>aukteris</td>
+						<td>50000</td>
+					</tr>
+					<tr>
+						<td>aukteris</td>
+						<td>50000</td>
+					</tr>
+					<tr>
+						<td>aukteris</td>
+						<td>50000</td>
+					</tr>
+					<tr>
+						<td>aukteris</td>
+						<td>50000</td>
+					</tr>
+					<tr>
+						<td>aukteris</td>
+						<td>50000</td>
+					</tr>
+					<tr>
+						<td>aukteris</td>
+						<td>50000</td>
+					</tr>
+					<tr>
+						<td>aukteris</td>
+						<td>50000</td>
+					</tr>
+					<tr>
+						<td>aukteris</td>
+						<td>50000</td>
+					</tr>
+					<tr>
+						<td>aukteris</td>
+						<td>50000</td>
+					</tr>
+				</table>
+				<br>
+				<button class="button buttonHover" onclick="startGame()">START</button>
+				</table>
+			</div>
+			<div id="playState" class="gameState">
+				
+			</div>
+			<div id="loseState" class="gameState">
+				<h2>slow worms become bait</h2>
+				<h3>final score: 50000</h3>
+				<table class="leaderboard">
+					<tr>
+						<th>Player</th>
+						<th>Score</th>
+					</tr>
+					<tr>
+						<td>aukteris</td>
+						<td>50000</td>
+					</tr>
+					<tr>
+						<td>aukteris</td>
+						<td>50000</td>
+					</tr>
+					<tr>
+						<td>aukteris</td>
+						<td>50000</td>
+					</tr>
+					<tr>
+						<td>aukteris</td>
+						<td>50000</td>
+					</tr>
+					<tr>
+						<td>aukteris</td>
+						<td>50000</td>
+					</tr>
+					<tr>
+						<td>aukteris</td>
+						<td>50000</td>
+					</tr>
+					<tr>
+						<td>aukteris</td>
+						<td>50000</td>
+					</tr>
+					<tr>
+						<td>aukteris</td>
+						<td>50000</td>
+					</tr>
+					<tr>
+						<td>aukteris</td>
+						<td>50000</td>
+					</tr>
+					<tr>
+						<td>aukteris</td>
+						<td>50000</td>
+					</tr>
+				</table>
+				<br>
+				<button class="button buttonHover" onclick="startGame()">RETRY</button>
+			</div>
+			<div id="gameBoard" class="gameState">
+				<br>
+				<canvas id="theCanvas" style="background: #000000; margin: 0 auto; display: block;" width="500px" height="500px"></canvas>
+			</div>
+		</div>
 	</body>
 </html>

@@ -72,11 +72,8 @@ app.use(express.static('multiplayer'));
 // initial client connection, and define the events we listen for
 io.on('connection', function(socket){
 	clients.push(socket);
-
-	// create a new snake for the new player, and send it to him
-	var snake = new Snake(socket.id, 3, Rand(10,40), Rand(10,40), globalObjs);
-	snakes[clients.indexOf(socket)] = snake;
-	socket.emit('init', snake);
+	socket.emit('init', socket.id);
+	
 	console.log(socket.id + " connected");
 
 	if (foods.length == 0)
@@ -84,12 +81,15 @@ io.on('connection', function(socket){
 
 	// handle client disconnect
 	socket.on('disconnect', function() {
+		var cleanupClientIndex = clients.indexOf(socket);
 		// Cleanup the obj tile
-		snakes[clients.indexOf(socket)].parts.forEach(function(tile) {
-			globalObjs.splice(globalObjs.indexOf(tile), 1);
-		});
-		snakes.splice(clients.indexOf(socket), 1);
-		clients.splice(clients.indexOf(socket), 1);
+		if (snakes[cleanupClientIndex] != null) {
+			snakes[cleanupClientIndex].parts.forEach(function(tile) {
+				globalObjs.splice(globalObjs.indexOf(tile), 1);
+			});
+			snakes.splice(cleanupClientIndex, 1);
+		}
+		clients.splice(cleanupClientIndex, 1);
 
 		io.emit('disconnect', socket.id);
 
@@ -130,6 +130,15 @@ io.on('connection', function(socket){
 				spawnFood();
 			}
 		});
+	});
+
+	// start the game
+	socket.on('start', function() {
+		// create a new snake for the new player, and send it to him
+		var snake = new Snake(socket.id, 3, Rand(10,40), Rand(10,40), globalObjs);
+		snakes[clients.indexOf(socket)] = snake;
+
+		socket.emit('start', snake);
 	});
 });
 
