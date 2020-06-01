@@ -11,6 +11,18 @@ class V{
 	{
 		return new V(this.x, this.y);
 	}
+	compare(other)
+	{
+		return other.x * 1.0 == this.x * 1.0 && other.y * 1.0 == this.y * 1.0;
+	}
+	add(other)
+	{
+		return new V(this.x + other.x, this.y + other.y);
+	}
+	multiply(value)
+	{
+		return new V(this.x * value, this.y * value);
+	}
 }
 function AddVs(v1, v2)
 {

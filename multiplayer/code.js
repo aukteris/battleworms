@@ -47,6 +47,7 @@ class Tile
 		this.rounded = true
 		this.visualpos = this.pos.copy();
 		this.lastPos = this.pos.copy();
+		this.tweenComplete = true;
 		objs.push(this);
 	}
 }
@@ -182,8 +183,11 @@ socket.on('update', function(payload){
 							var newTile = new Tile(null, null, null, tile);
 							playerLocalSnake.growSnake(newTile,index);
 						} else {
-							playerLocalSnake.parts[index].pos.x = tile.pos.x;
-							playerLocalSnake.parts[index].pos.y = tile.pos.y;
+							if (playerLocalSnake.parts[index].tweenComplete) {
+								playerLocalSnake.parts[index].pos.x = tile.pos.x;
+								playerLocalSnake.parts[index].pos.y = tile.pos.y;
+								playerLocalSnake.parts[index].tweenComplete = false;
+							}
 						}
 					});
 					if (snake.dead && !playerLocalSnake.dead)
@@ -222,7 +226,7 @@ function Update()
 		objs.forEach(function(tile)
 		{
 			tile.lastPos = tile.pos.copy(); //this happens before updating position
-			tile.visualpos = tile.pos.copy();
+			//tile.visualpos = tile.pos.copy();
 		});
 		ticks = 0;
 		if (snakes[clients.indexOf(connectionId)] != null) {
@@ -238,6 +242,9 @@ function Update()
 		//tween
 		tile.visualpos.x = tile.lastPos.x + (ticks/tickRate) * (tile.pos.x - tile.lastPos.x);
 		tile.visualpos.y = tile.lastPos.y + (ticks/tickRate) * (tile.pos.y - tile.lastPos.y);
+
+		if (CompareVs(tile.visualpos,tile.pos))
+			tile.tweenComplete = true;
 
 		tile.decay -= 1;
 		if(tile.decay <= 0)

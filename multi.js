@@ -19,7 +19,7 @@ const RandomChoice = require('./multiplayer/classes/randomchoice.js');
 var port = 3100;
 var height = 50;
 var width = 50;
-var intervalRate = 150;
+var intervalRate = 75;
 
 // For tracking objects
 var globalObjs = [];
