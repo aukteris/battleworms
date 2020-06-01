@@ -23,6 +23,10 @@ class V{
 	{
 		return new V(this.x * value, this.y * value);
 	}
+	setV(passedV) {
+		this.x = passedV.x;
+		this.y = passedV.y;
+	}
 }
 function AddVs(v1, v2)
 {

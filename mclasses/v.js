@@ -7,6 +7,11 @@ class V{
 			return this.x * this.y;
 		}
 	}
+
+	setV(passedV) {
+		this.x = passedV.x;
+		this.y = passedV.y;
+	}
 }
 
 module.exports = V

@@ -82,7 +82,6 @@ socket.on('update', function(payload){
 	allSnakes.forEach(function(snake){
 		if (snake != null) {
 			if (snake.serverId != connectionId) {
-				console.log(snakes);
 
 				// add new snakes to the tracked clients
 				if(clients.indexOf(snake.serverId) == -1) {
@@ -104,6 +103,7 @@ socket.on('update', function(payload){
 					// update our opponents snake segments
 					else if (!playerLocalSnake.dead) {
 						playerLocalSnake.collided = snake.collided;
+						playerLocalSnake.direction.setV(snake.direction);
 
 						snake.parts.forEach(function(tile, index) {
 							if (typeof playerLocalSnake.parts[index] == "undefined") {
@@ -122,7 +122,7 @@ socket.on('update', function(payload){
 			} else if (!snake.dead) {
 				var playerLocalSnake = snakes[clients.indexOf(snake.serverId)];
 				
-				if (playerLocalSnake != null) {
+				if (playerLocalSnake != null && !playerLocalSnake.dead) {
 					snake.parts.forEach(function(tile, index) {
 						if (typeof playerLocalSnake.parts[index] == "undefined") {
 							var newTile = new Tile(null, null, null, tile);
@@ -200,7 +200,7 @@ function CollisionTesting()
 		{
 			snakes.forEach(function(snake)
 			{
-				if(!snake.collided && CompareVs(snake.parts[0].pos, tile.pos) && tile != snake.parts[0])
+				if(!snake.collided && snake.parts[0] != null && CompareVs(snake.parts[0].pos, tile.pos) && tile != snake.parts[0])
 				{
 					if(tile.type == 0)
 					{
@@ -225,6 +225,16 @@ function UpdatePositions()
 		tmpSnake.lastPos = tmpSnake.parts[0].pos;
 		tmpSnake.parts[0].pos = AddVs(tmpSnake.parts[0].pos, tmpSnake.direction);
 	}
+	/*
+	snakes.forEach(function(tmpSnake, index) {
+		if(!tmpSnake.collided) 
+		{
+			tmpSnake.lastPos = tmpSnake.parts[0].pos;
+			tmpSnake.parts[0].pos = AddVs(tmpSnake.parts[0].pos, tmpSnake.direction);
+		}
+	});
+	*/
+
 }
 //All game logic happens here
 function GameUpdate()
