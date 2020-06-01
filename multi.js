@@ -104,15 +104,21 @@ io.on('connection', function(socket){
 		thisSnake.dead = clientSnake.dead;
 		thisSnake.collided = clientSnake.collided;
 
-		clientSnake.parts.forEach(function(tile, index) {
-			if (index < thisSnake.parts.length) {
-				thisSnake.parts[index].pos.x = tile.pos.x;
-				thisSnake.parts[index].pos.y = tile.pos.y;
-			}
-		});
+		if (clientSnake.parts.length > 0) {
+			clientSnake.parts.forEach(function(tile, index) {
+				if (index < thisSnake.parts.length) {
+					thisSnake.parts[index].pos.x = tile.pos.x;
+					thisSnake.parts[index].pos.y = tile.pos.y;
+				}
+			});
+		}
 
-		if (clientSnake.dead)
-			snakes[clients.indexOf(socket)].parts = [];
+		if (clientSnake.dead && clientSnake.length > 0) {
+			clientSnake.parts.forEach(function(tile) {
+				globalObjs.splice(globalObjs.indexOf(tile), 1);
+			});
+			clientSnake.parts = [];
+		}
 	});
 
 	// handles eating the snack, growing the snake, and creating a new snack
