@@ -23,9 +23,10 @@ var intervalRate = 75;
 
 // For tracking objects
 var globalObjs = [];
-var snakes = [];
+var snakes = {};
 var foods = [];
 var clients = [];
+var colors = [];
 
 //draw borders
 for(var x = 0; x < width; x++)
@@ -74,6 +75,9 @@ app.use(express.static('multiplayer'));
 io.on('connection', function(socket){
 	clients.push(socket);
 	socket.emit('init', socket.id);
+
+	colors[socket.id] = new Color();
+	colors[socket.id].randomize(Rand(0, 255), Rand(50, 220), Rand(0, 255));
 	
 	console.log(socket.id + " connected");
 
@@ -84,13 +88,14 @@ io.on('connection', function(socket){
 	socket.on('disconnect', function() {
 		var cleanupClientIndex = clients.indexOf(socket);
 		// Cleanup the obj tile
-		if (snakes[cleanupClientIndex] != null) {
-			snakes[cleanupClientIndex].parts.forEach(function(tile) {
+		if (snakes[socket.id] != null) {
+			snakes[socket.id].parts.forEach(function(tile) {
 				globalObjs.splice(globalObjs.indexOf(tile), 1);
 			});
-			snakes.splice(cleanupClientIndex, 1);
+			delete snakes[socket.id];
 		}
 		clients.splice(cleanupClientIndex, 1);
+		colors.splice(socket.id, 1);
 
 		io.emit('disconnect', socket.id);
 
@@ -99,7 +104,7 @@ io.on('connection', function(socket){
 
 	// handle updates from the clients
 	socket.on('update', function(clientSnake){
-		var thisSnake = snakes[clients.indexOf(socket)];
+		var thisSnake = snakes[socket.id];
 
 		if (thisSnake != null) {
 			thisSnake.dead = clientSnake.dead;
@@ -113,13 +118,6 @@ io.on('connection', function(socket){
 				});
 			}
 		}
-		
-		if (clientSnake.dead && clientSnake.length > 0) {
-			clientSnake.parts.forEach(function(tile) {
-				globalObjs.splice(globalObjs.indexOf(tile), 1);
-			});
-			clientSnake.parts = [];
-		}
 
 	});
 
@@ -127,7 +125,7 @@ io.on('connection', function(socket){
 	socket.on('eatfood', function(foodTile) {
 		foods.forEach(function(tile){
 			if (CompareVs(tile.pos, foodTile.pos)) {
-				var thisSnake = snakes[clients.indexOf(socket)];
+				var thisSnake = snakes[socket.id];
 				thisSnake.parts.push(new Tile(new V(0, 0), globalObjs, 0, thisSnake.color));
 				foods.splice(foods.indexOf(tile), 1);
 				spawnFood();
@@ -138,18 +136,29 @@ io.on('connection', function(socket){
 	// start the game
 	socket.on('start', function() {
 		// create a new snake for the new player, and send it to him
-		var snakeColor = (snakes[clients.indexOf(socket)] != null) ? snakes[clients.indexOf(socket)].color : null;
-		var snake = new Snake(socket.id, 3, Rand(10,40), Rand(10,40), snakeColor, globalObjs);
-		snakes[clients.indexOf(socket)] = snake;
+		var snake = new Snake(socket.id, 3, Rand(10,40), Rand(10,40), colors[socket.id], globalObjs);
+		snakes[socket.id] = snake;
 
 		socket.emit('start', snake);
+	});
+
+	socket.on('killed', function(snake) {
+		var thisSnake = snakes[socket.id];
+
+		thisSnake.parts.forEach(function(tile) {
+			globalObjs.splice(globalObjs.indexOf(tile), 1);
+		});
+		thisSnake.parts = [];
+		snakes[socket.id];
+
+		io.emit('killed', socket.id);
 	});
 });
 
 function sendUpdate() {
-	var payload = [];
-	payload.push(snakes);
-	payload.push(foods);
+	var payload = {};
+	payload['snakes'] = snakes;
+	payload['foods'] = foods;
 
 	io.emit('update', payload);
 }

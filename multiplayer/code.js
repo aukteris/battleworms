@@ -57,17 +57,22 @@ socket.on("init", function(playerId) {
 
 // start the game
 socket.on("start", function(playerSnake) {
-	snakes[clients.indexOf(connectionId)] = new Snake(playerSnake);
+	snakes[connectionId] = new Snake(playerSnake);
 });
 
 socket.on("disconnect", function(snakeId)
 {
-	var clientIndex = clients.indexOf(snakeId);
-	if (snakes[clientIndex] != null) {
-		snakes[clientIndex].die();
-		snakes.splice(clientIndex, 1);
+	if (snakes[snakeId] != null) {
+		snakes[snakeId].die();
+		snakes.splice(snakeId, 1);
 	}
+	var clientIndex = clients.indexOf(snakeId);
 	clients.splice(clientIndex, 1);
+});
+
+socket.on('killed', function(playerId) {
+	snakes[playerId].die();
+	snakes.splice(playerId, 1);
 });
 
 //receive updates from the server, and draw all non-local snakes
@@ -75,30 +80,28 @@ socket.on('update', function(payload){
 	if (timer == null)
 		timer = setInterval(Update, 15);
 
-	var allSnakes = payload[0];
-	var allFoods = payload[1];
+	var allSnakes = payload['snakes'];
+	var allFoods = payload['foods'];
 
 	// Populate Snakes
-	allSnakes.forEach(function(snake){
+	for (var key in allSnakes) {
+		var snake = allSnakes[key];	
+
 		if (snake != null) {
 			if (snake.serverId != connectionId) {
 
 				// add new snakes to the tracked clients
 				if(clients.indexOf(snake.serverId) == -1) {
 					clients.push(snake.serverId);
-					snakes[clients.indexOf(snake.serverId)] = new Snake(snake);
+					snakes[snake.serverId] = new Snake(snake);
 
 				// update existing snakes
 				} else {
-					var playerLocalSnake = snakes[clients.indexOf(snake.serverId)];
+					var playerLocalSnake = snakes[snake.serverId];
 
 					// Makes sure to reset the dead flag if a opponents has come back
 					if (playerLocalSnake.collided == false && playerLocalSnake.dead == true)
 						playerLocalSnake.dead = false;
-
-					// Kill an opponent
-					if (snake.dead && !playerLocalSnake.dead)
-						playerLocalSnake.die();
 
 					// update our opponents snake segments
 					else if (!playerLocalSnake.dead) {
@@ -120,9 +123,9 @@ socket.on('update', function(payload){
 					}
 				}
 			} else if (!snake.dead) {
-				var playerLocalSnake = snakes[clients.indexOf(snake.serverId)];
+				var playerLocalSnake = snakes[snake.serverId];
 				
-				if (playerLocalSnake != null && !playerLocalSnake.dead) {
+				if (playerLocalSnake != -1 && !playerLocalSnake.dead) {
 					snake.parts.forEach(function(tile, index) {
 						if (typeof playerLocalSnake.parts[index] == "undefined") {
 							var newTile = new Tile(null, null, null, tile);
@@ -132,17 +135,19 @@ socket.on('update', function(payload){
 				}
 			}
 		}
-	});
+	}
 
 	// Populate foods, "snacks"
-	allFoods.forEach(function(tile, index) {
+	for (var index in allFoods) {
+		var tile = allFoods[index];
+
 		if (typeof foods[index] == "undefined") {
 			foods[index] = new Tile(null, null, null, tile);
 		} else {
 			foods[index].pos.x = tile.pos.x;
 			foods[index].pos.y = tile.pos.y;
 		}
-	});
+	}
 });
 
 //update function
@@ -157,7 +162,7 @@ function Update()
 			//tile.visualpos = tile.pos.copy();
 		});
 		ticks = 0;
-		if (snakes[clients.indexOf(connectionId)] != null) {
+		if (snakes[connectionId] != null) {
 			UpdatePositions();
 			CollisionTesting();
 			GameUpdate();
@@ -198,13 +203,21 @@ function CollisionTesting()
 	objs.forEach(function(tile, index){
 		if(tile.type == 0 || tile.type == 1)
 		{
-			snakes.forEach(function(snake)
-			{
+			for (var key in snakes) {
+				var snake = snakes[key];
+
 				if(!snake.collided && snake.parts[0] != null && CompareVs(snake.parts[0].pos, tile.pos) && tile != snake.parts[0])
 				{
 					if(tile.type == 0)
 					{
 						snake.collided = true;
+						if (snake.serverId == connectionId) {
+							snake.die(function () {
+								socket.emit('killed', snake);
+								changeState("loseState");
+								snakes.splice(connectionId, 1);
+							});
+						}
 					}
 					if(tile.type == 1)
 					{
@@ -213,14 +226,14 @@ function CollisionTesting()
 						socket.emit('eatfood', tile);
 					}
 				}
-			});
+			}
 		}
 	});
 }
 function UpdatePositions()
 {
-	var tmpSnake = snakes[clients.indexOf(connectionId)];
-	if(!tmpSnake.collided) 
+	var tmpSnake = snakes[connectionId];
+	if(tmpSnake != -1 && !tmpSnake.collided) 
 	{
 		tmpSnake.lastPos = tmpSnake.parts[0].pos;
 		tmpSnake.parts[0].pos = AddVs(tmpSnake.parts[0].pos, tmpSnake.direction);
@@ -239,32 +252,24 @@ function UpdatePositions()
 //All game logic happens here
 function GameUpdate()
 {
-	var tmpSnake = snakes[clients.indexOf(connectionId)];
-	if (!tmpSnake.dead) 
+	var tmpSnake = snakes[connectionId];
+	if (tmpSnake != -1 && !tmpSnake.dead) 
 	{
-		if(tmpSnake.collided)
-		{
-			tmpSnake.die(function () {
-				socket.emit('update', tmpSnake);
-				changeState("loseState");
-			});
+		tmpSnake.lastDirection = tmpSnake.direction;
+		var lastPos = tmpSnake.lastPos;
+		tmpSnake.parts.forEach(function(part, index){
+			if(index != 0)
+			{
+				var newlastpos = new V(part.pos.x, part.pos.y);
+				part.pos.x = lastPos.x;
+				part.pos.y = lastPos.y;
+				lastPos = newlastpos;
+			}
+		});
 
-		} else {
-			tmpSnake.lastDirection = tmpSnake.direction;
-			var lastPos = tmpSnake.lastPos;
-			tmpSnake.parts.forEach(function(part, index){
-				if(index != 0)
-				{
-					var newlastpos = new V(part.pos.x, part.pos.y);
-					part.pos.x = lastPos.x;
-					part.pos.y = lastPos.y;
-					lastPos = newlastpos;
-				}
-			});
-
-			socket.emit('update', tmpSnake);
-		}
+		socket.emit('update', tmpSnake);
 	}
+
 }
 
 //get directional input
@@ -283,8 +288,8 @@ document.addEventListener("keydown", function(event) {
   if (kC === "right") x = 1;
   if(x == 0 && y == 0) return;
   var dir = new V(x, y);
-  if(!CompareVs(AddVs(dir, snakes[clients.indexOf(connectionId)].lastDirection), new V(0, 0))) //so we can't go in on ourselves
-  		snakes[clients.indexOf(connectionId)].direction = dir;
+  if(!CompareVs(AddVs(dir, snakes[connectionId].lastDirection), new V(0, 0))) //so we can't go in on ourselves
+  		snakes[connectionId].direction = dir;
 });
 
 function roundRect(ctx, x, y, width, height, radius) {
