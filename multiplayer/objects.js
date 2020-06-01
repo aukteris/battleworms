@@ -64,13 +64,12 @@ class Snake
 
 	// Handle snake death
 	die(cb) {
-		console.log(this.parts);
 		this.dead = true;
 
 		this.parts.forEach(function(tile, index){
 			tile.color = new Color(255, 0, 0);
 			tile.decay = 4.5 * (index) + 10;
-		}, this);
+		});
 
 		this.parts = [];
 		
@@ -84,10 +83,5 @@ class Snake
 			this.parts[this.parts.length -2].rounded = true;
 			this.parts[this.parts.length -1].rounded = false;
 		} 
-	}
-
-	// Handle snake respawn
-	respawn() {
-
 	}
 }

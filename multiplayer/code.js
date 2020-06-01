@@ -121,13 +121,15 @@ socket.on('update', function(payload){
 				}
 			} else if (!snake.dead) {
 				var playerLocalSnake = snakes[clients.indexOf(snake.serverId)];
-
-				snake.parts.forEach(function(tile, index) {
-					if (typeof playerLocalSnake.parts[index] == "undefined") {
-						var newTile = new Tile(null, null, null, tile);
-						playerLocalSnake.growSnake(newTile, index);
-					}
-				});
+				
+				if (playerLocalSnake != null) {
+					snake.parts.forEach(function(tile, index) {
+						if (typeof playerLocalSnake.parts[index] == "undefined") {
+							var newTile = new Tile(null, null, null, tile);
+							playerLocalSnake.growSnake(newTile, index);
+						}
+					});
+				}
 			}
 		}
 	});

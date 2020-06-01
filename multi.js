@@ -136,7 +136,8 @@ io.on('connection', function(socket){
 	// start the game
 	socket.on('start', function() {
 		// create a new snake for the new player, and send it to him
-		var snake = new Snake(socket.id, 3, Rand(10,40), Rand(10,40), globalObjs);
+		var snakeColor = (snakes[clients.indexOf(socket)] != null) ? snakes[clients.indexOf(socket)].color : null;
+		var snake = new Snake(socket.id, 3, Rand(10,40), Rand(10,40), snakeColor, globalObjs);
 		snakes[clients.indexOf(socket)] = snake;
 
 		socket.emit('start', snake);
