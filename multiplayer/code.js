@@ -71,8 +71,10 @@ socket.on("disconnect", function(snakeId)
 });
 
 socket.on('killed', function(playerId) {
-	snakes[playerId].die();
-	snakes.splice(playerId, 1);
+	if (playerId != connectionId) {
+		snakes[playerId].die();
+		snakes.splice(playerId, 1);
+	}
 });
 
 //receive updates from the server, and draw all non-local snakes
@@ -110,8 +112,7 @@ socket.on('update', function(payload){
 
 						snake.parts.forEach(function(tile, index) {
 							if (typeof playerLocalSnake.parts[index] == "undefined") {
-								var newTile = new Tile(null, null, null, tile);
-								playerLocalSnake.growSnake(newTile,index);
+								playerLocalSnake.growSnake(new Tile(null, null, null, tile),index);
 							} else {
 								if (playerLocalSnake.parts[index].tweenComplete) {
 									playerLocalSnake.parts[index].pos.x = tile.pos.x;
@@ -189,14 +190,7 @@ function Update()
 		ctx.fillRect(tile.visualpos.x*gridSize, (height * gridSize) - ((tile.visualpos.y+1) * gridSize), gridSize, gridSize);
 		if(tile.rounded)
 			roundRect(ctx, tile.lastPos.x*gridSize, (height * gridSize) - ((tile.lastPos.y+1) * gridSize), gridSize, gridSize, 3);
-		ctx.fill();
 	});
-}
-function OnSnackEaten()
-{
-	var snack = new Tile(new V(Rand(1, width-2), Rand(1, height-2)));
-	snack.color = new Color(255, 100, 50)
-	snack.type = 1;
 }
 function CollisionTesting()
 {
@@ -215,7 +209,7 @@ function CollisionTesting()
 							snake.die(function () {
 								socket.emit('killed', snake);
 								changeState("loseState");
-								snakes.splice(connectionId, 1);
+								delete snakes[connectionId];
 							});
 						}
 					}
@@ -253,7 +247,7 @@ function UpdatePositions()
 function GameUpdate()
 {
 	var tmpSnake = snakes[connectionId];
-	if (tmpSnake != -1 && !tmpSnake.dead) 
+	if (tmpSnake != null && !tmpSnake.dead) 
 	{
 		tmpSnake.lastDirection = tmpSnake.direction;
 		var lastPos = tmpSnake.lastPos;
@@ -292,7 +286,7 @@ document.addEventListener("keydown", function(event) {
   		snakes[connectionId].direction = dir;
 });
 
-function roundRect(ctx, x, y, width, height, radius) {
+function roundRect(ctx, x, y, width, height, radius, fill) {
   if (typeof radius === 'undefined') {
     radius = 5;
   }
@@ -314,6 +308,7 @@ function roundRect(ctx, x, y, width, height, radius) {
   ctx.quadraticCurveTo(x, y + height, x, y + height - radius.bl);
   ctx.lineTo(x, y + radius.tl);
   ctx.quadraticCurveTo(x, y, x + radius.tl, y);
+  ctx.fill();
   ctx.closePath();
 }
 

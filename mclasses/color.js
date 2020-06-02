@@ -14,6 +14,12 @@ class Color{
 		this.g = ranges[1];
 		this.b = ranges[2];
 	}
+
+	setColor (passedColor) {
+		this.r = passedColor.r;
+		this.g = passedColor.g;
+		this.b = passedColor.b;
+	}
 }
 
 var shuffle = function (array) {

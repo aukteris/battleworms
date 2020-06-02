@@ -127,6 +127,8 @@ io.on('connection', function(socket){
 			if (CompareVs(tile.pos, foodTile.pos)) {
 				var thisSnake = snakes[socket.id];
 				thisSnake.parts.push(new Tile(new V(0, 0), globalObjs, 0, thisSnake.color));
+
+				globalObjs.splice(globalObjs.indexOf(tile), 1);
 				foods.splice(foods.indexOf(tile), 1);
 				spawnFood();
 			}
@@ -149,7 +151,7 @@ io.on('connection', function(socket){
 			globalObjs.splice(globalObjs.indexOf(tile), 1);
 		});
 		thisSnake.parts = [];
-		snakes[socket.id];
+		delete snakes[socket.id];
 
 		io.emit('killed', socket.id);
 	});
