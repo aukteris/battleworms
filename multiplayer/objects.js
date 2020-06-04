@@ -1,7 +1,11 @@
 class Tile
 {
-	constructor(pos, type, color, serverTile)
+	constructor(pos, args, thisGame)
 	{
+		var type = (args != null && typeof args['type'] != undefined) ? args['type'] : null;
+		var color = (args != null && typeof args['color'] != undefined) ? args['color'] : null;
+		var serverTile = (args != null && typeof args['serverTile'] != undefined) ? args['serverTile'] : null;
+
 		this.effectData = new EffectData();
 		this.decay = Infinity;
 
@@ -21,7 +25,7 @@ class Tile
 		this.visualpos = this.pos.copy();
 		this.lastPos = this.pos.copy();
 		this.tweenComplete = true;
-		objs.push(this);
+		thisGame.objs.push(this);
 	}
 }
 class EffectData
@@ -34,7 +38,7 @@ class EffectData
 
 class Snake
 {
-	constructor(serverSnake)
+	constructor(serverSnake, game)
 	{
 		this.serverId = null;
 		this.parts = [];
@@ -44,7 +48,7 @@ class Snake
 			this.direction = new V(0, -1);//going down
 			this.pendingDeath = false; //waiting to be removed
 			this.lastPos = new V(5, 5);//last position of the head
-			this.parts.push(new Tile(new V(5, 5)), new Tile(new V(5, 6)), new Tile(new V(5, 7)));
+			this.parts.push(new Tile(new V(5, 5), null, game), new Tile(new V(5, 6), null, game), new Tile(new V(5, 7), null, game));
 			this.collided = false;
 			this.lastDirection = new V(0, -1);
 		} else {
@@ -56,7 +60,7 @@ class Snake
 			this.lastDirection = new V(serverSnake.lastDirection.x, serverSnake.lastDirection.y);
 
 			serverSnake.parts.forEach(function(tile) {
-				this.parts.push(new Tile(null, null, null, tile));
+				this.parts.push(new Tile(null, {'serverTile':tile}, game));
 			}, this)
 		}
 		this.parts[this.parts.length - 1].rounded = false;

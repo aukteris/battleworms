@@ -60,3 +60,24 @@ function RandomChoice(arr)
 {
 	return arr[Rand(0, arr.length)]
 }
+
+class Game{
+	constructor() {
+		// Tracking for various objects
+		this.objs = []; //all tiles that should be displayed
+		this.snakes = [];
+		this.foods = [];
+		this.clients = [];
+		this.connectionId;
+		this.gameState = "newPlayerState";
+		this.playerName;
+		this.ctx;
+		this.timer;
+	}
+
+	changeState(state) {
+		document.getElementById(this.gameState).classList.remove("activeState");
+		document.getElementById(state).classList.add("activeState");
+		this.gameState = state;
+	}
+}

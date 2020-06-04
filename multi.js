@@ -27,21 +27,26 @@ var snakes = {};
 var foods = [];
 var clients = [];
 var colors = [];
+var walls = [];
 
 //draw borders
 for(var x = 0; x < width; x++)
 {
 	var t = new Tile(new V(x, 0), globalObjs, 0);
 	t.color = new Color(0, 255, 255);
+	walls.push(t);
 	var t2 = new Tile(new V(x, height-1), globalObjs, 0);
 	t2.color = new Color(0, 255, 255);
+	walls.push(t2);
 }
 for(var y = 0; y < height; y++)
 {
 	var t = new Tile(new V(0, y), globalObjs, 0);
 	t.color = new Color(0, 255, 255);
+	walls.push(t);
 	var t2 = new Tile(new V(width-1, y), globalObjs, 0);
 	t2.color = new Color(0, 255, 255);
+	walls.push(t2);
 }
 
 function spawnFood() {
@@ -74,7 +79,12 @@ app.use(express.static('multiplayer'));
 // initial client connection, and define the events we listen for
 io.on('connection', function(socket){
 	clients.push(socket);
-	socket.emit('init', socket.id);
+	
+	var payload = {};
+	payload['socketId'] = socket.id;
+	payload['walls'] = walls;
+
+	socket.emit('init', payload);
 
 	colors[socket.id] = new Color();
 	colors[socket.id].randomize(Rand(0, 255), Rand(50, 220), Rand(0, 255));
