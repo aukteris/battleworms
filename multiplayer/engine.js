@@ -64,8 +64,8 @@ function RandomChoice(arr)
 class Game{
 	constructor() {
 		// Tracking for various objects
-		this.objs = []; //all tiles that should be displayed
-		this.snakes = [];
+		this.objs = {}; //all tiles that should be displayed
+		this.snakes = {};
 		this.foods = [];
 		this.clients = [];
 		this.connectionId;

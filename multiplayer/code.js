@@ -33,28 +33,67 @@ socket.on("init", function(payload) {
 	payload['walls'].forEach(function(tile) {
 		new Tile(null, {'serverTile':tile}, game);
 	});
+
+	clients = payload['clients'];
+
+	for (var index in payload['snakes']) {
+		var snake = payload['snakes'][index];
+
+		game.snakes[snake.serverId] = new Snake(snake, game);
+	}
+
+	payload['foods'].forEach(function(food, index){
+		game.foods[index] = new Tile(null, {'serverTile':food}, game);
+	});
 });
 
-// start the game
-socket.on("start", function(playerSnake) {
-	game.snakes[game.connectionId] = new Snake(playerSnake, game);
+// when a new client connects
+socket.on("newPlayerJoins", function(playerId) {
+	game.clients.push(playerId);
 });
 
+// another player disconnects
 socket.on("disconnect", function(snakeId)
 {
 	if (game.snakes[snakeId] != null) {
 		game.snakes[snakeId].die();
-		game.snakes.splice(snakeId, 1);
+		//game.snakes.splice(snakeId, 1);
+		delete game.snakes[snakeId];
 	}
 	var clientIndex = game.clients.indexOf(snakeId);
 	game.clients.splice(clientIndex, 1);
 });
 
+// start the game locally
+socket.on("start", function(playerSnake) {
+	game.snakes[game.connectionId] = new Snake(playerSnake, game);
+});
+
+// another player starts
+socket.on("newSnake", function(otherPlayerSnake) {
+	game.snakes[otherPlayerSnake.serverId] = new Snake(otherPlayerSnake, game);
+});
+
 socket.on('killed', function(playerId) {
 	if (playerId != game.connectionId) {
 		game.snakes[playerId].die();
-		game.snakes.splice(playerId, 1);
+		//game.snakes.splice(playerId, 1);
+		delete game.snakes[playerId];
 	}
+});
+
+// Grow a non-local snake
+socket.on('eatenFood', function(payload) {
+
+	var oldFood = game.objs[payload['oldFoodId']];
+	//oldFood.decay = 4;
+	game.foods.splice(game.foods.indexOf(oldFood));
+	//game.objs.splice(payload['oldFoodId'],1);
+	delete game.objs[payload['oldFoodId']];
+
+	game.snakes[payload['playerId']].growSnake(new Tile(null, {'serverTile':payload['segment']}, game),payload['segmentIndex']);
+
+	game.foods.push(new Tile(null, {'serverTile':payload['newFood']}, game));
 });
 
 //receive updates from the server, and draw all non-local snakes
@@ -62,69 +101,15 @@ socket.on('update', function(payload){
 	if (game.timer == null)
 		game.timer = setInterval(Update, 15);
 
-	var allSnakes = payload['snakes'];
-	var allFoods = payload['foods'];
+	payload['tileChanges'].forEach(function(updatedTile){
+		var localTile = game.objs[updatedTile.id];
+		if (typeof game.snakes[game.connectionId] === 'undefined' || game.snakes[game.connectionId].parts.indexOf(localTile) == -1)
+			localTile.pos.setV(updatedTile.pos);
+	});
 
-	// Populate Snakes
-	for (var key in allSnakes) {
-		var snake = allSnakes[key];	
-
-		if (snake != null) {
-			if (snake.serverId != game.connectionId) {
-
-				// add new snakes to the tracked clients
-				if(game.clients.indexOf(snake.serverId) == -1) {
-					game.clients.push(snake.serverId);
-					game.snakes[snake.serverId] = new Snake(snake, game);
-
-				// update existing snakes
-				} else {
-					var playerLocalSnake = game.snakes[snake.serverId];
-
-					// Makes sure to reset the dead flag if a opponents has come back
-					if (playerLocalSnake.collided == false && playerLocalSnake.dead == true)
-						playerLocalSnake.dead = false;
-
-					// update our opponents snake segments
-					else if (!playerLocalSnake.dead) {
-						playerLocalSnake.collided = snake.collided;
-						playerLocalSnake.direction.setV(snake.direction);
-
-						snake.parts.forEach(function(tile, index) {
-							if (typeof playerLocalSnake.parts[index] == "undefined") {
-								playerLocalSnake.growSnake(new Tile(null, {'serverTile':tile}, game),index);
-							} else {
-								if (playerLocalSnake.parts[index].tweenComplete) {
-									playerLocalSnake.parts[index].pos.setV(tile.pos);
-									playerLocalSnake.parts[index].tweenComplete = false;
-								}
-							}
-						});
-					}
-				}
-			} else if (!snake.dead) {
-				var playerLocalSnake = game.snakes[snake.serverId];
-				
-				if (playerLocalSnake != -1 && !playerLocalSnake.dead) {
-					snake.parts.forEach(function(tile, index) {
-						if (typeof playerLocalSnake.parts[index] == "undefined") {
-							var newTile = new Tile(null, {'serverTile':tile}, game);
-							playerLocalSnake.growSnake(newTile, index);
-						}
-					});
-				}
-			}
-		}
-	}
-
-	// Populate foods, "snacks"
-	for (var index in allFoods) {
-		var tile = allFoods[index];
-
-		if (typeof game.foods[index] == "undefined")
-			game.foods[index] = new Tile(null, {'serverTile':tile}, game);
-		else
-			game.foods[index].pos.setV(tile.pos);
+	for (var index in payload['snakeChanges']) {
+		if (index != game.connectionId)
+			game.snakes[index].direction.setV(payload['snakeChanges'][index]);
 	}
 });
 
@@ -134,11 +119,11 @@ function Update()
 	ticks += 1;
 	if(ticks >= tickRate)
 	{
-		game.objs.forEach(function(tile)
-		{
+		for (var index in game.objs) {
+			var tile = game.objs[index];
 			tile.lastPos = tile.pos.copy(); //this happens before updating position
 			//tile.visualpos = tile.pos.copy();
-		});
+		}
 		ticks = 0;
 		if (game.snakes[game.connectionId] != null) {
 			UpdatePositions();
@@ -148,8 +133,9 @@ function Update()
 	}
 	//update the game (visual) (collision)
 	game.ctx.clearRect(0, 0, width*gridSize, height*gridSize);//clear the screen to draw new shapes
-	game.objs.forEach(function(tile, index)
-	{
+
+	for (var index in game.objs) {
+		var tile = game.objs[index];
 		//tween
 		tile.visualpos.x = tile.lastPos.x + (ticks/tickRate) * (tile.pos.x - tile.lastPos.x);
 		tile.visualpos.y = tile.lastPos.y + (ticks/tickRate) * (tile.pos.y - tile.lastPos.y);
@@ -159,7 +145,8 @@ function Update()
 
 		tile.decay -= 1;
 		if(tile.decay <= 0)
-			game.objs.splice(index, 1);
+			//game.objs.splice(index, 1);
+			delete game.objs[index];
 		if(tile.effectData.keyframes[tile.decay] != null)
 			tile.color = tile.effectData.keyframes[tile.decay];
 		game.ctx.globalAlpha = tile.alpha;
@@ -167,38 +154,35 @@ function Update()
 		game.ctx.fillRect(tile.visualpos.x*gridSize, (height * gridSize) - ((tile.visualpos.y+1) * gridSize), gridSize, gridSize);
 		if(tile.rounded)
 			roundRect(game.ctx, tile.lastPos.x*gridSize, (height * gridSize) - ((tile.lastPos.y+1) * gridSize), gridSize, gridSize, 3);
-	});
+	}
 }
 function CollisionTesting()
 {
-	game.objs.forEach(function(tile, index){
-		if(tile.type == 0 || tile.type == 1)
-		{
-			for (var key in game.snakes) {
-				var snake = game.snakes[key];
+	for (var index in game.objs) {
+		var tile = game.objs[index];
+		if(tile.type == 0 || tile.type == 1) {
+			var snake = game.snakes[game.connectionId];
 
-				if(snake.parts[0] != null && CompareVs(snake.parts[0].pos, tile.pos) && tile != snake.parts[0])
+			if(snake.parts[0] != null && CompareVs(snake.parts[0].pos, tile.pos) && tile != snake.parts[0])
+			{
+				if(tile.type == 0)
 				{
-					if(tile.type == 0)
-					{
-						if (snake.serverId == game.connectionId) {
-							snake.die(function () {
-								socket.emit('killed', snake);
-								game.changeState("loseState");
-								delete game.snakes[game.connectionId];
-							});
-						}
-					}
-					if(tile.type == 1)
-					{
-						game.objs.splice(index, 1);
-						game.foods.splice(game.foods.indexOf(tile), 1);
-						socket.emit('eatfood', tile);
-					}
+					snake.die(function () {
+						socket.emit('killed', snake);
+						game.changeState("loseState");
+						delete game.snakes[game.connectionId];
+					});
+				}
+				
+				if(tile.type == 1) {
+					//game.objs.splice(index, 1);
+					delete game.objs[index];
+					game.foods.splice(game.foods.indexOf(tile), 1);
+					socket.emit('eatfood', tile);
 				}
 			}
 		}
-	});
+	}
 }
 function UpdatePositions()
 {

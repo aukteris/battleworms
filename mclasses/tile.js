@@ -1,4 +1,5 @@
 const Color = require('./color.js');
+const shortid = require('shortid');
 
 class Tile
 {
@@ -8,7 +9,10 @@ class Tile
 		this.pos = pos;
 		this.color = color == null ? new Color(0, 255, 0) : color;
 		this.type = type == null ? 0 : type; //0=collide, 1=snack, 2 = effect
-		objs.push(this);
+
+		var tmpId = shortid.generate();
+		objs[tmpId] = this;
+		this.id = tmpId;
 	}
 }
 

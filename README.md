@@ -5,6 +5,7 @@
 NodeJS
 
 ### NodeJS Libraries
-socket.io
-express
-html
+* socket.io
+* express
+* html
+* shortid

@@ -20,12 +20,17 @@ class Tile
 			this.pos = new V(serverTile.pos.x, serverTile.pos.y);
 			this.color = new Color(serverTile.color.r,serverTile.color.g,serverTile.color.b);
 			this.type = serverTile.type;
+			this.id = serverTile.id;
 		}
 		this.rounded = true
 		this.visualpos = this.pos.copy();
 		this.lastPos = this.pos.copy();
 		this.tweenComplete = true;
-		thisGame.objs.push(this);
+		
+		if (serverTile== null) 
+			thisGame.objs.push(this) 
+		else 
+			thisGame.objs[this.id] = this;
 	}
 }
 class EffectData
