@@ -19,7 +19,7 @@
 			<div id="welcomeState" class="gameState">
 				<h1>battleworms</h1>
 				<br>
-				<table class="leaderboard">
+				<table class="leaderboard" id="lbMain">
 					<tr>
 						<th>Player</th>
 						<th>Score</th>
@@ -70,12 +70,12 @@
 				</table>
 			</div>
 			<div id="playState" class="gameState">
-				
+				<h3>Score: <span id="scoreText">0</span></h3>
 			</div>
 			<div id="loseState" class="gameState">
-				<h2>slow worms become bait</h2>
-				<h3>final score: 50000</h3>
-				<table class="leaderboard">
+				<h2>slow worms become fast bait</h2>
+				<h3>final score: <span id="finalScoreText">0</span></h3>
+				<table class="leaderboard" id="lbLose">
 					<tr>
 						<th>Player</th>
 						<th>Score</th>

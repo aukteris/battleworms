@@ -108,3 +108,18 @@ body, html
 			#newPlayerState h2 {
 				padding-top:150px;
 			}
+
+			#playState h3 {
+				position:absolute;
+				text-align: left;
+				width:200px;
+				left:255px;
+			}
+
+			#loseState h2 {
+				width:300px;
+			}
+
+			#loseState h3 {
+				margin-block-start: -20px;
+			}

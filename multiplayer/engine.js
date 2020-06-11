@@ -61,6 +61,13 @@ function RandomChoice(arr)
 	return arr[Rand(0, arr.length)]
 }
 
+class LeaderboardMember {
+	constructor (name, score) {
+		this.name = name;
+		this.score = score;
+	}
+}
+
 class Game{
 	constructor() {
 		// Tracking for various objects
@@ -73,11 +80,25 @@ class Game{
 		this.playerName;
 		this.ctx;
 		this.timer;
+		this.score = 0;
 	}
 
 	changeState(state) {
 		document.getElementById(this.gameState).classList.remove("activeState");
 		document.getElementById(state).classList.add("activeState");
 		this.gameState = state;
+	}
+
+	setLeaderboard(leaderboard) {
+		var tmpLbHTML = "";
+
+		leaderboard.forEach(function(lm) {
+			tmpLbHTML += "<tr><td>" + lm.name + "</td><td>" + lm.score + "</td></tr>";
+		}, this);
+
+		var lbHTML = "<tr><th>Player</th><th>Score</th></tr>" + tmpLbHTML;
+
+		document.getElementById("lbMain").innerHTML = lbHTML;
+		document.getElementById("lbLose").innerHTML = lbHTML;
 	}
 }

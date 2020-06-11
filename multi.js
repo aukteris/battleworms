@@ -15,41 +15,49 @@ const SubVs = require('./multiplayer/classes/subvs.js');
 const RandomChoice = require('./multiplayer/classes/randomchoice.js');
 */
 
-// Settings
-var port = 3100;
-var height = 50;
-var width = 50;
-var intervalRate = 75;
-
-// For tracking objects
-var globalObjs = {};
-var snakes = {};
-var walls = [];
-var foods = [];
-var clients = [];
-var colors = [];
-var changes = [];
-
-//draw borders
-for(var x = 0; x < width; x++)
-{
-	var t = new Tile(new V(x, 0), globalObjs, 0);
-	t.color = new Color(0, 255, 255);
-	walls.push(t);
-	var t2 = new Tile(new V(x, height-1), globalObjs, 0);
-	t2.color = new Color(0, 255, 255);
-	walls.push(t2);
+class Client {
+	contructor (socket) {
+		this.socket = socket;
+		this.score = 0;
+		this.color;
+		this.name;
+	}
 }
-for(var y = 0; y < height; y++)
-{
-	var t = new Tile(new V(0, y), globalObjs, 0);
-	t.color = new Color(0, 255, 255);
-	walls.push(t);
-	var t2 = new Tile(new V(width-1, y), globalObjs, 0);
-	t2.color = new Color(0, 255, 255);
-	walls.push(t2);
+
+class LeaderboardMember {
+	constructor (name, score) {
+		this.name = name;
+		this.score = score;
+	}
 }
-spawnFood();
+
+class TileUpdate {
+	constructor (tile) {
+		this.pos = new V(tile.pos.x, tile.pos.y);
+		this.id = tile.id;
+	}
+}
+
+function scoreCompare(a, b) {
+	let comparison = 0;
+
+	if (a.score > b.score)
+		comparison = 1;
+	else if (a.score < b.score)
+		comparison = -1;
+
+	return comparison * -1;
+}
+
+function addToLeaderboard(name,score) {
+	var tmpMember = new LeaderboardMember(name,score);
+	leaderboard.push(tmpMember);
+
+	leaderboard.sort(scoreCompare);
+	leaderboard = leaderboard.slice(0,10);
+
+	io.emit('updateLB', leaderboard);
+}
 
 function spawnFood() {
 	var overlap = true;
@@ -80,18 +88,54 @@ function spawnFood() {
 	return newFood;
 }
 
+// Settings
+var port = 3100;
+var height = 50;
+var width = 50;
+var intervalRate = 75;
+
+// For tracking objects
+var globalObjs = {};
+var snakes = {};
+var walls = [];
+var foods = [];
+var clients = {};
+var changes = [];
+var leaderboard = [];
+
+//draw borders
+for(var x = 0; x < width; x++)
+{
+	var t = new Tile(new V(x, 0), globalObjs, 0);
+	t.color = new Color(0, 255, 255);
+	walls.push(t);
+	var t2 = new Tile(new V(x, height-1), globalObjs, 0);
+	t2.color = new Color(0, 255, 255);
+	walls.push(t2);
+}
+for(var y = 0; y < height; y++)
+{
+	var t = new Tile(new V(0, y), globalObjs, 0);
+	t.color = new Color(0, 255, 255);
+	walls.push(t);
+	var t2 = new Tile(new V(width-1, y), globalObjs, 0);
+	t2.color = new Color(0, 255, 255);
+	walls.push(t2);
+}
+spawnFood();
+
 app.use(express.static('multiplayer'));
 
 // initial client connection, and define the events we listen for
 io.on('connection', function(socket){
-	clients.push(socket);
+	clients[socket.id] = new Client(socket);
 	io.emit('newPlayerJoins', socket.id);
 
 	var clientIds = [];
 
-	clients.forEach(function(clientSocket) {
-		clientIds.push(clientSocket.id);
-	});
+	for (var clientId in clients) {	
+		clientIds.push(clientId);
+	}
 	
 	var payload = {};
 	payload['socketId'] = socket.id;
@@ -99,17 +143,18 @@ io.on('connection', function(socket){
 	payload['walls'] = walls;
 	payload['foods'] = foods;
 	payload['snakes'] = snakes;
+	payload['leaderboard'] = leaderboard;
 
 	socket.emit('init', payload);
 
-	colors[socket.id] = new Color();
-	colors[socket.id].randomize(Rand(0, 255), Rand(50, 220), Rand(0, 255));
+	clients[socket.id].color = new Color();
+	clients[socket.id].color.randomize(Rand(0, 255), Rand(50, 220), Rand(0, 255));
 	
 	console.log(socket.id + " connected");
 
 	// handle client disconnect
 	socket.on('disconnect', function() {
-		var cleanupClientIndex = clients.indexOf(socket);
+
 		// Cleanup the obj tile
 		if (snakes[socket.id] != null) {
 			snakes[socket.id].parts.forEach(function(tile) {
@@ -117,8 +162,7 @@ io.on('connection', function(socket){
 			});
 			delete snakes[socket.id];
 		}
-		clients.splice(cleanupClientIndex, 1);
-		colors.splice(socket.id, 1);
+		delete clients[socket.id];
 
 		io.emit('disconnect', socket.id);
 
@@ -140,7 +184,7 @@ io.on('connection', function(socket){
 						thisSnake.parts[index].pos.setV(tile.pos);
 
 						if (changes.indexOf(thisSnake.parts[index]) == -1)
-							changes.push(thisSnake.parts[index]);
+							changes.push(new TileUpdate(thisSnake.parts[index]));
 					}
 				});
 			}
@@ -155,6 +199,7 @@ io.on('connection', function(socket){
 				var thisSnake = snakes[socket.id];
 				var newSnakeSegment = new Tile(new V(0, 0), globalObjs, 0, thisSnake.color)
 				thisSnake.parts.push(newSnakeSegment);
+				clients[socket.id].score++;
 
 				var oldFoodTile = foodTile.id;
 				delete globalObjs[tile.id];
@@ -167,7 +212,9 @@ io.on('connection', function(socket){
 				payload['segmentIndex'] = thisSnake.parts.length - 1;
 				payload['oldFoodId'] = oldFoodTile;
 				payload['newFood'] = newFood;
+
 				io.emit('eatenFood', payload);
+				socket.emit('updateScore', clients[socket.id].score);
 			}
 		});
 	});
@@ -175,7 +222,8 @@ io.on('connection', function(socket){
 	// start the game
 	socket.on('start', function() {
 		// create a new snake for the new player, and send it to him
-		var snake = new Snake(socket.id, 3, Rand(10,40), Rand(10,40), colors[socket.id], globalObjs);
+		clients[socket.id].score = 0;
+		var snake = new Snake(socket.id, 3, Rand(10,40), Rand(10,40), clients[socket.id].color, globalObjs);
 		snakes[socket.id] = snake;
 
 		socket.emit('start', snake);
@@ -191,7 +239,13 @@ io.on('connection', function(socket){
 		thisSnake.parts = [];
 		delete snakes[socket.id];
 
+		addToLeaderboard(clients[socket.id].name,clients[socket.id].score);
+
 		io.emit('killed', socket.id);
+	});
+
+	socket.on('setName', function(name) {
+		clients[socket.id].name = name;
 	});
 });
 
