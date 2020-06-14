@@ -1,125 +1,135 @@
-body, html
-			{
-				font-family: "Trebuchet MS", Arial, Helvetica, sans-serif;
-				background-color: #292929;
-				color: white;
-			}
+body, html {
+	font-family: "Trebuchet MS", Arial, Helvetica, sans-serif;
+	background-color: #292929;
+	color: white;
+	margin-top:0px;
+}
 
-			#content {
-				position:relative;
-			}
+#content {
+	position:relative;
+}
 
-			.gameState {
-				text-align: center;
-				position:absolute;
-				margin: 0 auto;
-				left:50%;
-				transform: translate(-50%);
-				display:none;
-			}
+.gameState {
+	text-align: center;
+	position:absolute;
+	margin: 0 auto;
+	left:50%;
+	transform: translate(-50%);
+	display:none;
+}
 
-			.activeState {
-				display:block;
-			}
+.activeState {
+	display:block;
+}
 
-			#loseState {
-				z-index:4;
-			}
+#loseState {
+	z-index:4;
+}
 
-			#newPlayerState {
-				z-index:3;
-			}
+#newPlayerState {
+	z-index:3;
+}
 
-			#welcomeState {
-				z-index:2;
-			}
+#welcomeState {
+	z-index:2;
+}
 
-			#playState {
-				z-index:1;
-			}
+#playState {
+	z-index:1;
+}
 
-			#gameBoard {
-				z-index:0;
-				display:block;
-			}
+#gameBoard {
+	z-index:0;
+	display:block;
+	top:15px;
+}
 
+.leaderboard {
+	width:auto;
+	margin: 0 auto;
+	border-collapse: collapse;
+	border: 1px solid #292929;
 
-			.leaderboard {
-				width:auto;
-				margin: 0 auto;
-				border-collapse: collapse;
-				border: 1px solid #292929;
+}
 
-			}
+.leaderboard th {
+	background-color: #e84f17;
+	color:black;
+}
 
-			.leaderboard th {
-				background-color: #e84f17;
-				color:black;
-			}
+.leaderboard tr:nth-child(even){
+	background-color:#292929;
+}
 
-			.leaderboard tr:nth-child(even){
-				background-color:#292929;
-			}
+.leaderboard td {
+	padding:4px 22px;
+}
 
-			.leaderboard td {
-				padding:4px 22px;
-			}
+.button {
+	background-color: #dedede; /* Green */
+	border: none;
+	color: white;
+	padding: 16px 32px;
+	text-align: center;
+	text-decoration: none;
+	display: inline-block;
+	font-size: 16px;
+	margin: 4px 2px;
+	transition-duration: 0.4s;
+	cursor: pointer;
+}
 
-			.button {
-				background-color: #dedede; /* Green */
-				border: none;
-				color: white;
-				padding: 16px 32px;
-				text-align: center;
-				text-decoration: none;
-				display: inline-block;
-				font-size: 16px;
-				margin: 4px 2px;
-				transition-duration: 0.4s;
-				cursor: pointer;
-			}
+.buttonHover {
+	background-color: #292929;
+	color: white; 
+	border: 2px solid #dedede;
+}
 
-			.buttonHover {
-				background-color: #292929;
-				color: white; 
-				border: 2px solid #dedede;
-			}
+.buttonHover:hover {
+	background-color: #dedede;
+	color: black;
+}
 
-			.buttonHover:hover {
-				background-color: #dedede;
-				color: black;
-			}
+@font-face {
+	font-family:akashi;
+	src: url(akashi.woff);
+}
 
-			@font-face {
-				font-family:akashi;
-				src: url(akashi.woff);
-			}
+h1 {
+	font-family:akashi;
+	font-size: 32pt;
+}
 
-			h1 {
-				font-family:akashi;
-				font-size: 32pt;
-			}
+h2 {
+	font-family:akashi;
+	font-size:22pt;
+}
 
-			h2 {
-				font-family:akashi;
-				font-size:22pt;
-			}
+#newPlayerState h2 {
+	padding-top:150px;
+}
 
-			#newPlayerState h2 {
-				padding-top:150px;
-			}
+#playState h3 {
+	position:absolute;
+	text-align: left;
+	width:200px;
+	left:255px;
+}
 
-			#playState h3 {
-				position:absolute;
-				text-align: left;
-				width:200px;
-				left:255px;
-			}
+#loseState h2 {
+	width:300px;
+}
 
-			#loseState h2 {
-				width:300px;
-			}
+#loseState h3 {
+	margin-block-start: -20px;
+}
 
-			#loseState h3 {
-				margin-block-start: -20px;
-			}
+@media only screen and (max-device-width:600px){
+	#gameBoard {
+		top: 0px;
+	}
+
+	.gameState {
+		width:100%;
+	}
+}

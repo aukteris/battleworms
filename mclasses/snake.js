@@ -28,6 +28,7 @@ class Snake
 
 		this.collided = false;
 		this.lastDirection = new V(0, -1);
+		this.layBricks = 0;
 	}
 }
 

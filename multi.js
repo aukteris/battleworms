@@ -1,10 +1,11 @@
-var express = require('express');
-var app = express();
-var http = require('http').Server(app);
-var io = require('socket.io')(http);
+const express = require('express');
+const app = express();
+const http = require('http').Server(app);
+const io = require('socket.io')(http);
+const fs = require('fs');
 const V = require('./mclasses/v.js');
 const CompareVs = require('./mclasses/comparevs.js');
-const Color= require('./mclasses/color.js');
+const Color = require('./mclasses/color.js');
 const Rand = require('./mclasses/rand.js');
 const Snake = require('./mclasses/snake.js');
 const Tile = require('./mclasses/tile.js');
@@ -50,13 +51,16 @@ function scoreCompare(a, b) {
 }
 
 function addToLeaderboard(name,score) {
-	var tmpMember = new LeaderboardMember(name,score);
+	let tmpMember = new LeaderboardMember(name,score);
 	leaderboard.push(tmpMember);
 
 	leaderboard.sort(scoreCompare);
 	leaderboard = leaderboard.slice(0,10);
 
 	io.emit('updateLB', leaderboard);
+
+	let data = JSON.stringify(leaderboard);
+	fs.writeFileSync(persistLBJSON, data);
 }
 
 function spawnFood() {
@@ -93,6 +97,8 @@ var port = 3100;
 var height = 50;
 var width = 50;
 var intervalRate = 75;
+var persistLBJSON = 'persistentLB.json';
+const tempBrickDecay = 2000;
 
 // For tracking objects
 var globalObjs = {};
@@ -101,7 +107,15 @@ var walls = [];
 var foods = [];
 var clients = {};
 var changes = [];
-var leaderboard = [];
+let leaderboard = [];
+
+if (fs.existsSync(persistLBJSON)) {
+	let rawdata = fs.readFileSync(persistLBJSON);
+	let persistentLBData = JSON.parse(rawdata);
+	persistentLBData.forEach(function (lbm){
+		leaderboard.push(new LeaderboardMember(lbm.name,lbm.score));
+	});
+}
 
 //draw borders
 for(var x = 0; x < width; x++)
@@ -177,16 +191,27 @@ io.on('connection', function(socket){
 			thisSnake.dead = clientSnake.dead;
 			thisSnake.collided = clientSnake.collided;
 			thisSnake.direction.setV(clientSnake.direction);
+			let lastSegmentIndex;
 
-			if (clientSnake.parts.length > 0) {
-				clientSnake.parts.forEach(function(tile, index) {
-					if (index < thisSnake.parts.length) {
-						thisSnake.parts[index].pos.setV(tile.pos);
+			clientSnake.parts.forEach(function(tile, index) {
+				if (index < thisSnake.parts.length) {
+					thisSnake.parts[index].pos.setV(tile.pos);
 
-						if (changes.indexOf(thisSnake.parts[index]) == -1)
-							changes.push(new TileUpdate(thisSnake.parts[index]));
-					}
-				});
+					if (changes.indexOf(thisSnake.parts[index]) == -1)
+						changes.push(new TileUpdate(thisSnake.parts[index]));
+				}
+
+				lastSegmentIndex = index;
+			});
+
+			
+			if (thisSnake.layBricks > 0) {
+				let newBrick = new Tile(thisSnake.parts[lastSegmentIndex].pos.copy(), globalObjs, 0, new Color(0, 255, 255), tempBrickDecay);
+				walls.push(newBrick);
+				io.emit('placeTile', newBrick);
+
+
+				thisSnake.layBricks--;
 			}
 		}
 
@@ -197,7 +222,8 @@ io.on('connection', function(socket){
 		foods.forEach(function(tile){
 			if (CompareVs(tile.pos, foodTile.pos)) {
 				var thisSnake = snakes[socket.id];
-				var newSnakeSegment = new Tile(new V(0, 0), globalObjs, 0, thisSnake.color)
+				var lastSegmentIndex = thisSnake.parts.length - 1;
+				var newSnakeSegment = new Tile(thisSnake.parts[lastSegmentIndex].pos.copy(), globalObjs, 0, thisSnake.color)
 				thisSnake.parts.push(newSnakeSegment);
 				clients[socket.id].score++;
 
@@ -209,12 +235,14 @@ io.on('connection', function(socket){
 				var payload = {};
 				payload['playerId'] = socket.id;
 				payload['segment'] = newSnakeSegment;
-				payload['segmentIndex'] = thisSnake.parts.length - 1;
+				payload['segmentIndex'] = lastSegmentIndex + 1;
 				payload['oldFoodId'] = oldFoodTile;
 				payload['newFood'] = newFood;
 
 				io.emit('eatenFood', payload);
 				socket.emit('updateScore', clients[socket.id].score);
+
+				thisSnake.layBricks = thisSnake.parts.length;
 			}
 		});
 	});
@@ -250,6 +278,17 @@ io.on('connection', function(socket){
 });
 
 function sendUpdate() {
+
+	for (var i in globalObjs) {
+		let tmpTile = globalObjs[i];
+
+		if (tmpTile.decay != "Infinity") {
+			tmpTile.decay -= 5;
+			if (tmpTile.decay <= 0)
+				delete globalObjs[i];
+		}
+	}
+
 	var snakeChanges = {};
 	for (var index in snakes) {
 		var snake = snakes[index];

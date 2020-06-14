@@ -14,17 +14,6 @@ Authors: Dan Kurtz (aukteris), Trevor Hughes (theangrybagel)
 	inverse = floor(index/width), index-floor(index/width)*width
 */
 
-// Working space to make functions before moving them elsewhere
-function updateScore(score) {
-	var scoreTextElement = document.getElementById("scoreText");
-	var finalScoreTextElement = document.getElementById("finalScoreText")
-
-	if (scoreTextElement.innerHTML != score) {
-		scoreTextElement.innerHTML = score;
-		finalScoreTextElement.innerHTML = score;
-	}
-}
-
 //initial variables
 var socket = io()
 var width = 50;
@@ -79,7 +68,7 @@ socket.on("disconnect", function(snakeId)
 // start the game locally
 socket.on("start", function(playerSnake) {
 	game.snakes[game.connectionId] = new Snake(playerSnake, game);
-	game.score = 0;
+	game.updateScore(0);
 });
 
 // another player starts
@@ -109,12 +98,17 @@ socket.on('eatenFood', function(payload) {
 
 // Update the local score
 socket.on('updateScore', function(score) {
-	game.score = score;
+	game.updateScore(score);
 });
 
 // Update the local leaderboard
 socket.on('updateLB', function(leaderboard) {
 	game.setLeaderboard(leaderboard);
+})
+
+// Place a single tile
+socket.on('placeTile', function(tile) {
+	new Tile(null, {'serverTile':tile}, game);
 })
 
 //receive updates from the server, and draw all non-local snakes
@@ -168,11 +162,14 @@ function Update()
 		tile.decay -= 1;
 		if(tile.decay <= 0)
 			delete game.objs[index];
+
 		if(tile.effectData.keyframes[tile.decay] != null)
 			tile.color = tile.effectData.keyframes[tile.decay];
+
 		game.ctx.globalAlpha = tile.alpha;
 		game.ctx.fillStyle = tile.color.ToString();
 		game.ctx.fillRect(tile.visualpos.x*gridSize, (height * gridSize) - ((tile.visualpos.y+1) * gridSize), gridSize, gridSize);
+		
 		if(tile.rounded)
 			roundRect(game.ctx, tile.lastPos.x*gridSize, (height * gridSize) - ((tile.lastPos.y+1) * gridSize), gridSize, gridSize, 3);
 	}
@@ -218,9 +215,7 @@ function UpdatePositions()
 
 // Updates to snakes tail positions
 function GameUpdate()
-{
-	updateScore(game.score);
-	
+{	
 	//var tmpSnake = game.snakes[game.connectionId];
 	for (var index in game.snakes) {
 		var tmpSnake = game.snakes[index];

@@ -101,4 +101,16 @@ class Game{
 		document.getElementById("lbMain").innerHTML = lbHTML;
 		document.getElementById("lbLose").innerHTML = lbHTML;
 	}
+
+	updateScore(score) {
+		this.score = score;
+		
+		var scoreTextElement = document.getElementById("scoreText");
+		var finalScoreTextElement = document.getElementById("finalScoreText")
+
+		if (scoreTextElement.innerHTML != score) {
+			scoreTextElement.innerHTML = score;
+			finalScoreTextElement.innerHTML = score;
+		}
+	}
 }

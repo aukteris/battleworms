@@ -8,9 +8,13 @@ class V{
 		}
 	}
 
-	setV(passedV) {
+	setV(passedV){
 		this.x = passedV.x;
 		this.y = passedV.y;
+	}
+
+	copy(){
+		return new V(this.x, this.y);
 	}
 }
 

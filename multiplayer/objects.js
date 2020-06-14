@@ -7,13 +7,13 @@ class Tile
 		var serverTile = (args != null && typeof args['serverTile'] != undefined) ? args['serverTile'] : null;
 
 		this.effectData = new EffectData();
-		this.decay = Infinity;
 
 		if (serverTile == null) {
 			this.alpha = 1;
 			this.pos = pos;
 			this.color = color == null ? new Color(0, 255, 0) : color;
 			this.type = type == null ? 0 : type; //0=collide, 1=snack, 2 = effect
+			this.decay = Infinity;
 			
 		} else {
 			this.alpha = serverTile.alpha;
@@ -21,6 +21,7 @@ class Tile
 			this.color = new Color(serverTile.color.r,serverTile.color.g,serverTile.color.b);
 			this.type = serverTile.type;
 			this.id = serverTile.id;
+			this.decay = serverTile.decay;
 		}
 		this.rounded = true
 		this.visualpos = this.pos.copy();
